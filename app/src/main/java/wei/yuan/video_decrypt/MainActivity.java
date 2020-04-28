@@ -1,11 +1,13 @@
 package wei.yuan.video_decrypt;
 
 import android.content.BroadcastReceiver;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -27,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText mEt;
     private ScrollView mScrollView;
     private TextView mTvConsole;
+    private Button mBtnM3U8;
 
     private BroadcastReceiver mOtgReceiver;
 
@@ -64,6 +67,16 @@ public class MainActivity extends AppCompatActivity {
         });
         mScrollView = (ScrollView) findViewById(R.id.scroller);
         mTvConsole = (TextView) findViewById(R.id.consoleText);
+        mBtnM3U8 = (Button) findViewById(R.id.btn1);
+        mBtnM3U8.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.v(TAG, "start local m3u8 activity");
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setClassName(getApplicationContext(), LocalM3u8Activity.class.getName());
+                startActivity(intent);
+            }
+        });
     }
 
     @Override
