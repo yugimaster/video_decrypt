@@ -29,6 +29,11 @@
             android:name=".LocalM3u8Activity"
             android:screenOrientation="portrait">
         </activity>
+
+        <activity
+            android:name=".M3u8DownloadActivity"
+            android:screenOrientation="portrait">
+        </activity>
     </application>
 
 </manifest>

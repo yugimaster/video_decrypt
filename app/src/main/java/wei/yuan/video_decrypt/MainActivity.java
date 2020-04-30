@@ -30,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
     private ScrollView mScrollView;
     private TextView mTvConsole;
     private Button mBtnM3U8;
+    private Button mBtnDownload;
 
     private BroadcastReceiver mOtgReceiver;
 
@@ -74,6 +75,16 @@ public class MainActivity extends AppCompatActivity {
                 Log.v(TAG, "start local m3u8 activity");
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.setClassName(getApplicationContext(), LocalM3u8Activity.class.getName());
+                startActivity(intent);
+            }
+        });
+        mBtnDownload = (Button) findViewById(R.id.btn2);
+        mBtnDownload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.v(TAG, "start m3u8 download activity");
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setClassName(getApplicationContext(), M3u8DownloadActivity.class.getName());
                 startActivity(intent);
             }
         });
