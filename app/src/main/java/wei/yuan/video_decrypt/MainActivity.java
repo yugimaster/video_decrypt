@@ -12,6 +12,8 @@ import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import com.arialyy.aria.core.Aria;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
@@ -30,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private ScrollView mScrollView;
     private TextView mTvConsole;
     private Button mBtnM3U8;
+    private Button mBtnDownload;
 
     private BroadcastReceiver mOtgReceiver;
 
@@ -54,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     String path = mEt.getText().toString().replace("\n", "");
                     File srcDir = new File(storage, path);
+                    mTvConsole.setText("");
                     if (srcDir.exists() && srcDir.isDirectory()) {
                         showExternalStorageFiles(srcDir);
                     } else {
@@ -77,6 +81,18 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+        mBtnDownload = (Button) findViewById(R.id.btn2);
+        mBtnDownload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.v(TAG, "start download activity");
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setClassName(getApplicationContext(), DownloadActivity.class.getName());
+                startActivity(intent);
+            }
+        });
+
+        Aria.init(this);
     }
 
     @Override
