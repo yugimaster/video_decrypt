@@ -77,6 +77,26 @@ public class CommonUtil {
     }
 
     /**
+     * 追加写入二进制文件
+     * @param bytes
+     * @param file
+     */
+    public static boolean writeBinaryFileAppend(byte[] bytes, File file, TextView textView) {
+        try {
+            FileOutputStream fos = new FileOutputStream(file, true);
+            fos.write(bytes, 0, bytes.length);
+            fos.flush();
+            fos.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            textView.append("\n" + e.toString());
+        }
+
+        return false;
+    }
+
+    /**
      * 读取二进制文件
      * @param file
      * @return

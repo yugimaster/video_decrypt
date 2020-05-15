@@ -11,6 +11,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.arialyy.aria.core.Aria;
 
@@ -18,12 +19,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import wei.yuan.video_decrypt.util.AESUtil;
 import wei.yuan.video_decrypt.util.CommonUtil;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = "MainActivity";
     private static final String EXTERNAL_STORAGE = "/mnt/sdcard/dmm";
@@ -33,6 +37,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView mTvConsole;
     private Button mBtnM3U8;
     private Button mBtnDownload;
+    private Button mBtnCombine;
+    private Button mBtnDecrypt;
 
     private BroadcastReceiver mOtgReceiver;
 
@@ -45,52 +51,16 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mEt = (EditText) findViewById(R.id.et_path);
-        mEt.setOnKeyListener(new View.OnKeyListener() {
-            @Override
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
-                if (keyCode == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_UP) {
-                    Log.v(TAG, "手指弹起时执行确认功能");
-                    File storage = new File(EXTERNAL_STORAGE);
-                    if (!storage.exists() || !storage.isDirectory()) {
-                        Log.v(TAG, "storage invalid!");
-                        return true;
-                    }
-                    String path = mEt.getText().toString().replace("\n", "");
-                    File srcDir = new File(storage, path);
-                    mTvConsole.setText("");
-                    if (srcDir.exists() && srcDir.isDirectory()) {
-                        showExternalStorageFiles(srcDir);
-                    } else {
-                        showDebugLog(mTvConsole, srcDir.getAbsolutePath() + " doesn't exist");
-                    }
-                    return true;
-                }
-
-                return false;
-            }
-        });
         mScrollView = (ScrollView) findViewById(R.id.scroller);
         mTvConsole = (TextView) findViewById(R.id.consoleText);
         mBtnM3U8 = (Button) findViewById(R.id.btn1);
-        mBtnM3U8.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.v(TAG, "start local m3u8 activity");
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setClassName(getApplicationContext(), LocalM3u8Activity.class.getName());
-                startActivity(intent);
-            }
-        });
+        mBtnM3U8.setOnClickListener(this);
         mBtnDownload = (Button) findViewById(R.id.btn2);
-        mBtnDownload.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.v(TAG, "start download activity");
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setClassName(getApplicationContext(), DownloadActivity.class.getName());
-                startActivity(intent);
-            }
-        });
+        mBtnDownload.setOnClickListener(this);
+        mBtnCombine = (Button) findViewById(R.id.btn3);
+        mBtnCombine.setOnClickListener(this);
+        mBtnDecrypt = (Button) findViewById(R.id.btn4);
+        mBtnDecrypt.setOnClickListener(this);
 
         Aria.init(this);
     }
@@ -101,6 +71,34 @@ public class MainActivity extends AppCompatActivity {
         if (mOtgReceiver != null) {
             this.unregisterReceiver(mOtgReceiver);
             mOtgReceiver = null;
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.btn1:
+                Log.v(TAG, "start local m3u8 activity");
+                Intent intent1 = new Intent(Intent.ACTION_VIEW);
+                intent1.setClassName(getApplicationContext(), LocalM3u8Activity.class.getName());
+                startActivity(intent1);
+                break;
+            case R.id.btn2:
+                Log.v(TAG, "start download activity");
+                Intent intent2 = new Intent(Intent.ACTION_VIEW);
+                intent2.setClassName(getApplicationContext(), DownloadActivity.class.getName());
+                startActivity(intent2);
+                break;
+            case R.id.btn3:
+                mTvConsole.setText("");
+                combineTstoFile();
+                break;
+            case R.id.btn4:
+                mTvConsole.setText("");
+                decryptTsFiles();
+                break;
+            default:
+                break;
         }
     }
 
@@ -175,6 +173,65 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void combineTstoFile() {
+        Log.v(TAG, "combineTstoFile()");
+        File storage = new File(EXTERNAL_STORAGE);
+        if (!storage.exists() || !storage.isDirectory()) {
+            Log.v(TAG, "storage invalid!");
+            return;
+        }
+        String path = mEt.getText().toString().replace("\n", "");
+        if (path.isEmpty()) {
+            Toast.makeText(getApplicationContext(), "请输入文件目录！", Toast.LENGTH_LONG).show();
+            return;
+        }
+        File srcDir = new File(storage, path);
+        File tempDir = new File(srcDir, "temp");
+        if (!tempDir.exists() || !tempDir.isDirectory()) {
+            Toast.makeText(getApplicationContext(), "文件目录不存在！", Toast.LENGTH_LONG).show();
+            return;
+        }
+        File outputDir = new File(srcDir, "output");
+        if (!outputDir.exists()) {
+            showDebugLog(mTvConsole, "make output directory");
+            outputDir.mkdirs();
+        }
+        File output = new File(outputDir, "video.wmv");
+        List<File> files = Arrays.asList(tempDir.listFiles());
+        Collections.sort(files, new Comparator<File>() {
+            @Override
+            public int compare(File o1, File o2) {
+                if (o1.isDirectory() && o2.isFile())
+                    return -1;
+                if (o1.isFile() && o2.isDirectory())
+                    return 1;
+                return o1.getName().compareTo(o2.getName());
+            }
+        });
+        Log.d(TAG, "temp directory files: ");
+        int total = files.size();
+        for (int i = 0; i < files.size(); i++) {
+            File file = files.get(i);
+            byte[] tsData = CommonUtil.readBinaryFile(file);
+            if (tsData == null) {
+                showDebugLog(mTvConsole, file.getName() + " is null");
+                total -= 1;
+                continue;
+            }
+            boolean isSuccess = CommonUtil.writeBinaryFileAppend(tsData, output, mTvConsole);
+            if (isSuccess) {
+                float percent = Float.valueOf(String.valueOf(i + 1)) * 100 / Float.valueOf(String.valueOf(files.size()));
+                String msg = String.format("Combinig %s + into data......\ntotal: %d\npercent: %.1f",
+                        file.getName(), total, percent);
+                showDebugLog(mTvConsole, msg);
+            } else {
+                showDebugLog(mTvConsole, "Combine " + file.getName() + " failed");
+                total -= 1;
+            }
+        }
+        Log.v(TAG, "Combine finished");
+    }
+
     private String getKeyHex(File keyFile) {
         try {
             FileInputStream fileInputStream = new FileInputStream(keyFile);
@@ -241,6 +298,27 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             showDebugLog(mTvConsole, "getTsIndex()" + "\n" + e.toString());
             return "";
+        }
+    }
+
+    private void decryptTsFiles() {
+        Log.v(TAG, "decryptTsFiles()");
+        File storage = new File(EXTERNAL_STORAGE);
+        if (!storage.exists() || !storage.isDirectory()) {
+            Log.v(TAG, "storage invalid!");
+            return;
+        }
+        String path = mEt.getText().toString().replace("\n", "");
+        if (path.isEmpty()) {
+            Toast.makeText(getApplicationContext(), "请输入文件目录！", Toast.LENGTH_LONG).show();
+            return;
+        }
+        File srcDir = new File(storage, path);
+        mTvConsole.setText("");
+        if (srcDir.exists() && srcDir.isDirectory()) {
+            showExternalStorageFiles(srcDir);
+        } else {
+            showDebugLog(mTvConsole, srcDir.getAbsolutePath() + " doesn't exist");
         }
     }
 }

@@ -27,10 +27,18 @@
         android:hint="请输入路径文件" />
 
     <Button
+        android:id="@+id/btn4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/et_path"
+        android:text="Decrypt"/>
+
+    <Button
         android:id="@+id/btn1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toBottomOf="@id/et_path"
+        app:layout_constraintLeft_toRightOf="@id/btn4"
         android:text="M3u8"/>
 
     <Button
@@ -40,5 +48,13 @@
         app:layout_constraintTop_toBottomOf="@id/et_path"
         app:layout_constraintLeft_toRightOf="@id/btn1"
         android:text="Download"/>
+
+    <Button
+        android:id="@+id/btn3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/et_path"
+        app:layout_constraintLeft_toRightOf="@id/btn2"
+        android:text="Combine"/>
 
 </android.support.constraint.ConstraintLayout>
