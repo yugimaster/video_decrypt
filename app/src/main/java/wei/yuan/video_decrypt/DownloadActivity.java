@@ -1,8 +1,13 @@
 package wei.yuan.video_decrypt;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -11,14 +16,19 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.arialyy.annotations.Download;
+import com.arialyy.annotations.DownloadGroup;
 import com.arialyy.aria.core.Aria;
+import com.arialyy.aria.core.download.DownloadEntity;
+import com.arialyy.aria.core.download.DownloadGroupTask;
 import com.arialyy.aria.core.download.DownloadTask;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DownloadActivity extends Activity {
+import wei.yuan.video_decrypt.util.CommonUtil;
+
+public class DownloadActivity extends Activity implements View.OnClickListener {
 
     private final static String TAG = "Downloader";
     private final static String EXTRA_STORAGE = Environment.getExternalStorageDirectory().getPath();
@@ -58,6 +68,17 @@ public class DownloadActivity extends Activity {
 
         // 取消注册aria
         Aria.download(this).unRegister();
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.btn1:
+                downloadButtonClick();
+                break;
+            default:
+                break;
+        }
     }
 
     @Download.onWait void onWait(DownloadTask task) {
@@ -102,39 +123,111 @@ public class DownloadActivity extends Activity {
         showDebugLog(mTvConsole, "task complete: " + task.getDownloadEntity().getDownloadPath());
     }
 
+    @DownloadGroup.onPre void onPre(DownloadGroupTask task) {
+        Log.v(TAG, "DownloadGroup prepare");
+    }
+
+    @DownloadGroup.onTaskStart void taskStart(DownloadGroupTask task) {
+        Log.v(TAG, "DownloadGroup start");
+    }
+
+    @DownloadGroup.onTaskResume void taskResume(DownloadGroupTask task) {
+        Log.v(TAG, "DownloadGroup resume");
+    }
+
+    @DownloadGroup.onTaskRunning void running(DownloadGroupTask task) {
+        Log.v(TAG, "DownloadGroup running");
+    }
+
+    @DownloadGroup.onWait void onWait(DownloadGroupTask task){
+        Log.v(TAG, "DownloadGroup wait");
+    }
+
+    @DownloadGroup.onTaskStop void taskStop(DownloadGroupTask task) {
+        Log.v(TAG, "DownloadGroup stop");
+    }
+
+    @DownloadGroup.onTaskCancel void taskCancel(DownloadGroupTask task) {
+        Log.v(TAG, "DownloadGroup cancel");
+    }
+
+    @DownloadGroup.onTaskFail void taskFail(DownloadGroupTask task) {
+        Log.v(TAG, "DownloadGroup fail");
+    }
+
+    @DownloadGroup.onTaskComplete void taskComplete(DownloadGroupTask task) {
+        String msg = "DownloadGroup complete";
+        Log.v(TAG, "DownloadGroup complete");
+        setSpannableString(mTvConsole, msg + "\n");
+    }
+
+    @DownloadGroup.onSubTaskRunning void onSubTaskRunning(DownloadGroupTask groupTask, DownloadEntity subEntity) {
+        String fileName = subEntity.getFileName();
+        String percent = subEntity.getPercent() + "%";
+        String speed = String.valueOf(subEntity.getSpeed());
+        Log.d(TAG, String.format("[%s]: percent %s, speed %sB/s", fileName, percent, speed));
+    }
+
+    @DownloadGroup.onSubTaskPre void onSubTaskPre(DownloadGroupTask groupTask, DownloadEntity subEntity) {
+        Log.d(TAG, "[" + subEntity.getFileName() + "] prepare");
+    }
+
+    @DownloadGroup.onSubTaskStart void onSubTaskStart(DownloadGroupTask groupTask, DownloadEntity subEntity) {
+        Log.d(TAG, "[" + subEntity.getFileName() + "] start");
+    }
+
+    @DownloadGroup.onSubTaskStop void onSubTaskStop(DownloadGroupTask groupTask, DownloadEntity subEntity) {
+        Log.d(TAG, "[" + subEntity.getFileName() + "] stop");
+    }
+
+    @DownloadGroup.onSubTaskComplete void onSubTaskComplete(DownloadGroupTask groupTask, DownloadEntity subEntity) {
+        String msg = "[" + subEntity.getFileName() + "] complete";
+        Log.d(TAG, msg);
+        mTvConsole.append(msg + "\n");
+    }
+
+    @DownloadGroup.onSubTaskFail void onSubTaskFail(DownloadGroupTask groupTask, DownloadEntity subEntity) {
+        String msg = "[" + subEntity.getFileName() + "] fail";
+        Log.d(TAG, msg);
+        SpannableString spannableString = new SpannableString(msg);
+        spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#FF0000")),
+                0, spannableString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        mTvConsole.append(spannableString + "\n");
+    }
+
     private void initView() {
         mEtDir = (EditText) findViewById(R.id.et_dir);
         mEtUrl = (EditText) findViewById(R.id.et_url);
         mEtOffset = (EditText) findViewById(R.id.et_offset);
         mBtnDownload = (Button) findViewById(R.id.btn1);
-        mBtnDownload.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                downloadDir = mEtDir.getText().toString().replace("\n", "");
-                if (downloadDir.isEmpty()) {
-                    Toast.makeText(getApplicationContext(), "请输入下载目录！", Toast.LENGTH_LONG).show();
-                    return;
-                }
-                File fileDir = new File(EXTRA_STORAGE + "/dmm/" + downloadDir);
-                Log.d(TAG, fileDir.getPath());
-                if (!fileDir.exists() || !fileDir.isDirectory()) {
-                    Toast.makeText(getApplicationContext(), "无效的下载目录！", Toast.LENGTH_LONG).show();
-                    return;
-                }
-                url = mEtUrl.getText().toString().replace("\n", "");
-                if (url.isEmpty()) {
-                    url = DOWNLOAD_URL;
-                }
-                String offset = mEtOffset.getText().toString();
-                if (offset.isEmpty()) {
-                    Toast.makeText(getApplicationContext(), "请输入offset的值！", Toast.LENGTH_LONG).show();
-                    return;
-                }
-                mTvConsole.setText("");
-                httpMultiDownload(url, offset);
-            }
-        });
+        mBtnDownload.setOnClickListener(this);
         mTvConsole = (TextView) findViewById(R.id.consoleText);
+    }
+
+    private void downloadButtonClick() {
+        Log.v(TAG, "downloadButtonClick()");
+        downloadDir = mEtDir.getText().toString().replace("\n", "");
+        if (downloadDir.isEmpty()) {
+            Toast.makeText(getApplicationContext(), "请输入下载目录！", Toast.LENGTH_LONG).show();
+            return;
+        }
+        File fileDir = new File(EXTRA_STORAGE + "/dmm/" + downloadDir);
+        Log.d(TAG, fileDir.getPath());
+        if (!fileDir.exists() || !fileDir.isDirectory()) {
+            Toast.makeText(getApplicationContext(), "无效的下载目录！", Toast.LENGTH_LONG).show();
+            return;
+        }
+        url = mEtUrl.getText().toString().replace("\n", "");
+        if (url.isEmpty()) {
+            url = DOWNLOAD_URL;
+        }
+        String offset = mEtOffset.getText().toString();
+        if (offset.isEmpty()) {
+            Toast.makeText(getApplicationContext(), "请输入offset的值！", Toast.LENGTH_LONG).show();
+            return;
+        }
+        mTvConsole.setText("");
+        httpMultiDownloadGroup(url, offset);
     }
 
     private void httpSingleDownload(String downloadUrl, String downloadName) {
@@ -158,11 +251,34 @@ public class DownloadActivity extends Activity {
                 curUrl = url;
             } else {
                 int index = Integer.valueOf(firstIndex) + i;
-                curFileName = firstFileName.replace(firstIndex, String.valueOf(index));
+                curFileName = firstFileName.replace(firstIndex + ".ts", String.valueOf(index) + ".ts");
                 curUrl = url.replace(firstFileName, curFileName);
             }
             httpSingleDownload(curUrl, curFileName);
         }
+    }
+
+    private void httpMultiDownloadGroup(String url, String offset) {
+        String firstFileName = generateFileName(url);
+        String firstIndex = getTsIndex(firstFileName);
+        List<String> urls = new ArrayList<String>();
+        List<String> names = new ArrayList<String>();
+        String curUrl = "";
+        String curFileName = "";
+        for (int i = 0; i <= Integer.valueOf(offset); i++) {
+            int index = Integer.valueOf(firstIndex) + i;
+            curFileName = firstFileName.replace(firstIndex + ".ts", String.valueOf(index) + ".ts");
+            curUrl = url.replace(firstFileName, curFileName);
+            Log.d(TAG, "index " + index + " url: " + curUrl);
+            urls.add(curUrl);
+            names.add(curFileName);
+        }
+        String groupDirPath = EXTRA_STORAGE + "/dmm/" + downloadDir + "/ts";
+        Aria.download(this)
+                .loadGroup(urls)
+                .setDirPath(groupDirPath)
+                .setSubFileName(names)
+                .start();
     }
 
     private String generateFileName(String url) {
@@ -186,5 +302,10 @@ public class DownloadActivity extends Activity {
     private void showDebugLog(TextView textView, String log) {
         String msg = log + "\n";
         textView.append(msg);
+    }
+
+    private void setSpannableString(TextView tv, String content) {
+        SpannableStringBuilder builder = CommonUtil.setSpannableString(content, "#4D8ADE");
+        tv.append(builder);
     }
 }

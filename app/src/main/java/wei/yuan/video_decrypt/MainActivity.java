@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.SpannableStringBuilder;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -230,6 +231,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
         Log.v(TAG, "Combine finished");
+        SpannableStringBuilder builder = CommonUtil.setSpannableString("Combine finished\n", "#4D8ADE");
+        mTvConsole.append(builder);
     }
 
     private String getKeyHex(File keyFile) {
@@ -286,6 +289,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else {
             showDebugLog(mTvConsole, keyFile.getAbsolutePath() + " doesn't exist");
         }
+
+        SpannableStringBuilder builder = CommonUtil.setSpannableString("Decrypt ts finished\n", "#4D8ADE");
+        mTvConsole.append(builder);
     }
 
     private String getTsIndex(String fileName) {

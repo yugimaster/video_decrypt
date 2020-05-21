@@ -1,5 +1,9 @@
 package wei.yuan.video_decrypt.util;
 
+import android.graphics.Color;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.widget.TextView;
 
 import java.io.ByteArrayOutputStream;
@@ -129,6 +133,19 @@ public class CommonUtil {
         } else {
             return String.format(Locale.CANADA, "%.2fGB", sizeInByte / 1024. / 1024 / 1024);
         }
+    }
+
+    /**
+     * 设置文本字体颜色
+     * @param content
+     * @param colorString
+     * @return
+     */
+    public static SpannableStringBuilder setSpannableString(String content, String colorString) {
+        SpannableStringBuilder builder = new SpannableStringBuilder(content);
+        ForegroundColorSpan foregroundColorSpan = new ForegroundColorSpan(Color.parseColor(colorString));
+        builder.setSpan(foregroundColorSpan, 0, content.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return builder;
     }
 
     private static byte[] toByteArray(FileInputStream fis, long len) {
