@@ -1,6 +1,7 @@
 package wei.yuan.video_decrypt;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
@@ -49,6 +50,10 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         super.onCreate(savedInstanceState);
         Log.v(TAG, "onCreate()");
         setContentView(R.layout.activity_download);
+
+        Intent intent = getIntent();
+        Bundle bundle = intent.getBundleExtra("Info");
+        downloadDir = bundle.getString("directory");
 
         initView();
         // 注册aria
@@ -152,13 +157,15 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
     }
 
     @DownloadGroup.onTaskFail void taskFail(DownloadGroupTask task) {
-        Log.v(TAG, "DownloadGroup fail");
+        String msg = "DownloadGroup fail";
+        Log.v(TAG, msg);
+        setSpannableString(mTvConsole, msg + "\n", "#FF0000");
     }
 
     @DownloadGroup.onTaskComplete void taskComplete(DownloadGroupTask task) {
         String msg = "DownloadGroup complete";
         Log.v(TAG, "DownloadGroup complete");
-        setSpannableString(mTvConsole, msg + "\n");
+        setSpannableString(mTvConsole, msg + "\n", "#4D8ADE");
     }
 
     @DownloadGroup.onSubTaskRunning void onSubTaskRunning(DownloadGroupTask groupTask, DownloadEntity subEntity) {
@@ -189,10 +196,7 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
     @DownloadGroup.onSubTaskFail void onSubTaskFail(DownloadGroupTask groupTask, DownloadEntity subEntity) {
         String msg = "[" + subEntity.getFileName() + "] fail";
         Log.d(TAG, msg);
-        SpannableString spannableString = new SpannableString(msg);
-        spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#FF0000")),
-                0, spannableString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        mTvConsole.append(spannableString + "\n");
+        setSpannableString(mTvConsole, msg + "\n", "#FF0000");
     }
 
     private void initView() {
@@ -202,6 +206,8 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         mBtnDownload = (Button) findViewById(R.id.btn1);
         mBtnDownload.setOnClickListener(this);
         mTvConsole = (TextView) findViewById(R.id.consoleText);
+
+        mEtDir.setText(downloadDir);
     }
 
     private void downloadButtonClick() {
@@ -304,7 +310,7 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         textView.append(msg);
     }
 
-    private void setSpannableString(TextView tv, String content) {
+    private void setSpannableString(TextView tv, String content, String colorString) {
         SpannableStringBuilder builder = CommonUtil.setSpannableString(content, "#4D8ADE");
         tv.append(builder);
     }

@@ -86,8 +86,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.btn2:
                 Log.v(TAG, "start download activity");
+                Bundle bundle = new Bundle();
                 Intent intent2 = new Intent(Intent.ACTION_VIEW);
+                String path = mEt.getText().toString().replace("\n", "");
+                bundle.putString("directory", path);
                 intent2.setClassName(getApplicationContext(), DownloadActivity.class.getName());
+                intent2.putExtra("Info", bundle);
                 startActivity(intent2);
                 break;
             case R.id.btn3:
@@ -197,7 +201,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             showDebugLog(mTvConsole, "make output directory");
             outputDir.mkdirs();
         }
-        File output = new File(outputDir, "video.wmv");
         List<File> files = Arrays.asList(tempDir.listFiles());
         Collections.sort(files, new Comparator<File>() {
             @Override
@@ -206,11 +209,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     return -1;
                 if (o1.isFile() && o2.isDirectory())
                     return 1;
+                if (o1.getName().length() < o2.getName().length())
+                    return -1;
+                if (o1.getName().length() > o2.getName().length())
+                    return 1;
                 return o1.getName().compareTo(o2.getName());
             }
         });
         Log.d(TAG, "temp directory files: ");
         int total = files.size();
+        String dir = mEt.getText().toString().replace("\n", "");
+        File output = createOutputFile(outputDir, dir, files);
         for (int i = 0; i < files.size(); i++) {
             File file = files.get(i);
             byte[] tsData = CommonUtil.readBinaryFile(file);
@@ -326,5 +335,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else {
             showDebugLog(mTvConsole, srcDir.getAbsolutePath() + " doesn't exist");
         }
+    }
+
+    private File createOutputFile(File outDir, String dir, List<File> files) {
+        int total = files.size();
+        File firstFile = files.get(0);
+        File lastFile = files.get(total - 1);
+
+        String indexLeft = getTsIndex(firstFile.getName());
+        String indexRight = getTsIndex(lastFile.getName());
+        return new File(outDir, dir + "_" + indexLeft + "-" + indexRight + ".wmv");
     }
 }
