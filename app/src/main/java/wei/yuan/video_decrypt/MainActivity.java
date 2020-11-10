@@ -63,7 +63,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mBtnDecrypt = (Button) findViewById(R.id.btn4);
         mBtnDecrypt.setOnClickListener(this);
 
-        Aria.init(this);
     }
 
     @Override

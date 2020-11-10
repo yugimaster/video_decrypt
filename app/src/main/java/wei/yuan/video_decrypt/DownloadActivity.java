@@ -20,8 +20,9 @@ import com.arialyy.annotations.Download;
 import com.arialyy.annotations.DownloadGroup;
 import com.arialyy.aria.core.Aria;
 import com.arialyy.aria.core.download.DownloadEntity;
-import com.arialyy.aria.core.download.DownloadGroupTask;
-import com.arialyy.aria.core.download.DownloadTask;
+import com.arialyy.aria.core.download.DownloadGroupEntity;
+import com.arialyy.aria.core.task.DownloadGroupTask;
+import com.arialyy.aria.core.task.DownloadTask;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
     private EditText mEtUrl;
     private EditText mEtOffset;
     private Button mBtnDownload;
+    private Button mBtnClear;
     private TextView mTvConsole;
 
     private String downloadDir;
@@ -80,6 +82,9 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         switch (v.getId()) {
             case R.id.btn1:
                 downloadButtonClick();
+                break;
+            case R.id.btn2:
+                clearButtonClick();
                 break;
             default:
                 break;
@@ -124,8 +129,8 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
     }
 
     @Download.onTaskComplete void taskComplete(DownloadTask task) {
-        Log.d(TAG, "path ==> " + task.getDownloadEntity().getDownloadPath());
-        showDebugLog(mTvConsole, "task complete: " + task.getDownloadEntity().getDownloadPath());
+        Log.d(TAG, "path ==> " + task.getDownloadEntity().getFilePath());
+        showDebugLog(mTvConsole, "task complete: " + task.getDownloadEntity().getFilePath());
     }
 
     @DownloadGroup.onPre void onPre(DownloadGroupTask task) {
@@ -160,12 +165,14 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         String msg = "DownloadGroup fail";
         Log.v(TAG, msg);
         setSpannableString(mTvConsole, msg + "\n", "#FF0000");
+        clearDownloadGroupTasks();
     }
 
     @DownloadGroup.onTaskComplete void taskComplete(DownloadGroupTask task) {
         String msg = "DownloadGroup complete";
         Log.v(TAG, "DownloadGroup complete");
         setSpannableString(mTvConsole, msg + "\n", "#4D8ADE");
+        clearDownloadGroupTasks();
     }
 
     @DownloadGroup.onSubTaskRunning void onSubTaskRunning(DownloadGroupTask groupTask, DownloadEntity subEntity) {
@@ -205,6 +212,8 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         mEtOffset = (EditText) findViewById(R.id.et_offset);
         mBtnDownload = (Button) findViewById(R.id.btn1);
         mBtnDownload.setOnClickListener(this);
+        mBtnClear = (Button) findViewById(R.id.btn2);
+        mBtnClear.setOnClickListener(this);
         mTvConsole = (TextView) findViewById(R.id.consoleText);
 
         mEtDir.setText(downloadDir);
@@ -236,6 +245,16 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         httpMultiDownloadGroup(url, offset);
     }
 
+    private void clearButtonClick() {
+        Log.v(TAG, "clearButtonClick()");
+        boolean isClear = clearDownloadGroupTasks();
+        if (isClear) {
+            mTvConsole.append("Download Group Tasks Clear!" + "\n");
+        } else {
+            mTvConsole.append("Download Group Tasks is none!" + "\n");
+        }
+    }
+
     private void httpSingleDownload(String downloadUrl, String downloadName) {
         Log.v(TAG, "httpSingleDownload()");
         String path = EXTRA_STORAGE + "/dmm/" + downloadDir + "/ts/" + downloadName;
@@ -243,7 +262,7 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         Aria.download(this)
                 .load(downloadUrl)
                 .setFilePath(path)
-                .start();
+                .create();
     }
 
     private void httpMultiDownload(String url, String offset) {
@@ -280,11 +299,17 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
             names.add(curFileName);
         }
         String groupDirPath = EXTRA_STORAGE + "/dmm/" + downloadDir + "/ts";
-        Aria.download(this)
+        File tsDir = new File(groupDirPath);
+        if (!tsDir.exists()) {
+            tsDir.mkdir();
+        }
+        long taskId = Aria.download(this)
                 .loadGroup(urls)
                 .setDirPath(groupDirPath)
                 .setSubFileName(names)
-                .start();
+                .unknownSize()
+                .create();
+        Log.d(TAG, "current task id: " + taskId);
     }
 
     private String generateFileName(String url) {
@@ -313,5 +338,24 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
     private void setSpannableString(TextView tv, String content, String colorString) {
         SpannableStringBuilder builder = CommonUtil.setSpannableString(content, "#4D8ADE");
         tv.append(builder);
+    }
+
+    private boolean clearDownloadGroupTasks() {
+        Log.v(TAG, "clearDownloadGroupTasks()");
+        boolean flag = true;
+        List<DownloadGroupEntity> groupEntities = Aria.download(this).getGroupTaskList();
+        if (groupEntities != null && groupEntities.size() > 0) {
+            for (DownloadGroupEntity entity : groupEntities) {
+                long taskId = entity.getId();
+                Log.v(TAG, "DownloadGroupEntity taskId: " + taskId);
+                // 取消组合任务
+                Aria.download(this).loadGroup(taskId).cancel();
+            }
+        } else {
+            Log.v(TAG, "no group tasks!");
+            flag = false;
+        }
+
+        return flag;
     }
 }
