@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">video_decrypt</string>
+    <string name="auto_fill_hints">请输入内容</string>
 </resources>

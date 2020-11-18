@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button mBtnDownload;
     private Button mBtnCombine;
     private Button mBtnDecrypt;
+    private Button mBtnPlay;
 
     private BroadcastReceiver mOtgReceiver;
 
@@ -62,7 +63,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mBtnCombine.setOnClickListener(this);
         mBtnDecrypt = (Button) findViewById(R.id.btn4);
         mBtnDecrypt.setOnClickListener(this);
-
+        mBtnPlay = (Button) findViewById(R.id.btn5);
+        mBtnPlay.setOnClickListener(this);
     }
 
     @Override
@@ -100,6 +102,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btn4:
                 mTvConsole.setText("");
                 decryptTsFiles();
+                break;
+            case R.id.btn5:
+                Log.v(TAG, "start m3u8 vod activity");
+                Intent intent5 = new Intent(Intent.ACTION_VIEW);
+                Bundle bundle5 = new Bundle();
+                String path5 = mEt.getText().toString().replace("\n", "");
+                bundle5.putString("directory", path5);
+                intent5.setClassName(getApplicationContext(), M3U8VodActivity.class.getName());
+                intent5.putExtra("Info", bundle5);
+                startActivity(intent5);
                 break;
             default:
                 break;
