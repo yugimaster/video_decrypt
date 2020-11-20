@@ -82,7 +82,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btn1:
                 Log.v(TAG, "start local m3u8 activity");
                 Intent intent1 = new Intent(Intent.ACTION_VIEW);
+                Bundle bundle1 = new Bundle();
+                String path1 = mEt.getText().toString().replace("\n", "");
+                bundle1.putString("directory", path1);
                 intent1.setClassName(getApplicationContext(), LocalM3u8Activity.class.getName());
+                intent1.putExtra("Info", bundle1);
                 startActivity(intent1);
                 break;
             case R.id.btn2:

@@ -2,6 +2,7 @@ package wei.yuan.video_decrypt;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -10,14 +11,24 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.arialyy.annotations.Download;
 import com.arialyy.annotations.M3U8;
 import com.arialyy.aria.core.Aria;
 import com.arialyy.aria.core.download.DownloadEntity;
 import com.arialyy.aria.core.download.DownloadTaskListener;
+import com.arialyy.aria.core.download.M3U8Entity;
 import com.arialyy.aria.core.download.m3u8.M3U8VodOption;
+import com.arialyy.aria.core.processor.ITsMergeHandler;
+import com.arialyy.aria.core.processor.IVodTsUrlConverter;
+import com.arialyy.aria.core.scheduler.M3U8PeerTaskListener;
+import com.arialyy.aria.core.task.DownloadTask;
+import com.arialyy.aria.util.ALog;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+
+import wei.yuan.video_decrypt.util.CommonUtil;
 
 public class M3U8VodActivity extends Activity implements View.OnClickListener {
 
@@ -30,7 +41,7 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
     private Button mBtnClear;
 
     private String downloadDir = "";
-    private String m3u8Url = "";
+    private String mM3u8Url = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,10 +87,71 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
         }
     }
 
-//    @M3U8.onPeerStart
-//    void onPeerStart(String m3u8Url, String peerPath, int peerIndex) {
-//        Log.v(TAG, "peer start, path: " + peerPath + ", index: " + peerIndex);
-//    }
+    @M3U8.onPeerStart
+    void onPeerStart(String m3u8Url, String peerPath, int peerIndex) {
+        Log.v(TAG, "peer start, path: " + peerPath + ", index: " + peerIndex);
+    }
+
+    @M3U8.onPeerComplete
+    void onPeerComplete(String m3u8Url, String peerPath, int peerIndex) {
+        Log.v(TAG, "peer fail, path: " + peerPath + ", index: " + peerIndex);
+    }
+
+    @M3U8.onPeerFail
+    void onPeerFail(String m3u8Url, String peerPath, int peerIndex) {
+        Log.v(TAG, "peer complete, path: " + peerPath + ", index: " + peerIndex);
+    }
+
+    @Download.onTaskStart
+    void taskStart(DownloadTask task) {
+        Log.v(TAG, "task start: " + task.getDownloadEntity().getUrl());
+    }
+
+    @Download.onTaskComplete
+    void taskComplete(DownloadTask task) {
+        Log.v(TAG, "task complete: " + task.getDownloadEntity().getFileName());
+        String tsDownloadPath = EXTRA_STORAGE + "/dmm/" + downloadDir + "/." + downloadDir + ".m3u8_0";
+        if (isFileExist(tsDownloadPath)) {
+            Log.d(TAG, tsDownloadPath + " is exist");
+            Log.d(TAG, "files size in ts dir is: " + getDirFilesNum(tsDownloadPath));
+        }
+    }
+
+    @Download.onTaskFail
+    void taskFail(DownloadTask task) {
+        Log.v(TAG, "task fail: " + task.getDownloadEntity().getFileName());
+    }
+
+    private static class VodTsConverter implements IVodTsUrlConverter {
+        @Override
+        public List<String> convert(String m3u8Url, List<String> tsUrls) {
+            // 转换ts文件的url地址
+            String parentUrl = CommonUtil.getParentUrl(m3u8Url);
+            List<String> newUrls = new ArrayList<>();
+            for (String url : tsUrls) {
+                Log.d(TAG, "new ts url: " + parentUrl + url);
+                newUrls.add(parentUrl + url);
+            }
+
+            // 返回有效的ts文件url集合
+            return newUrls;
+        }
+    }
+
+    private static class TsMergeHandler implements ITsMergeHandler {
+        @Override
+        public boolean merge(M3U8Entity m3U8Entity, List<String> tsPath) {
+            String keyFormat = m3U8Entity.getKeyFormat();
+            String keyFormatVer = m3U8Entity.getKeyFormatVersion();
+            String keyIv = m3U8Entity.getIv();
+            String cacheDir = m3U8Entity.getCacheDir();
+            String method = m3U8Entity.getMethod();
+            Log.d(TAG, "keyFormat: " + keyFormat + ", keyFormatVersion: " + keyFormatVer
+                    + "\n" + "keyIv: " + keyIv + "\n" + "cacheDir: " + cacheDir + "\n" + "method: "
+                    + method);
+            return false;
+        }
+    }
 
     private void initView() {
         mETDir = (EditText) findViewById(R.id.et_dir);
@@ -105,8 +177,8 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
             Toast.makeText(getApplicationContext(), "无效的下载目录！", Toast.LENGTH_LONG).show();
             return;
         }
-        m3u8Url = mETUrl.getText().toString().trim().replace("\n", "");
-        if (m3u8Url.isEmpty()) {
+        mM3u8Url = mETUrl.getText().toString().trim().replace("\n", "");
+        if (mM3u8Url.isEmpty()) {
             Toast.makeText(getApplicationContext(), "请输入m3u8地址！", Toast.LENGTH_LONG).show();
             return;
         }
@@ -115,10 +187,27 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
         M3U8VodOption option = new M3U8VodOption();
         // 设置密钥文件的保存路径
         option.setKeyPath(fileDir.getPath() + "/key.key");
-        // 不合并ts文件
-        option.merge(false);
-        // 生成m3u8索引文件
-        option.generateIndexFile();
+
+        /*
+         * 是否使用默认转换器
+         * true: 使用
+         * false: 不使用
+         */
+        //
+        option.setUseDefConvert(true);
+
+        /*
+         * 是否生成本地m3u8索引文件
+         */
+//        option.generateIndexFile();
+
+        /*
+         * 是否合并ts文件
+         * true: 合并
+         * false: 不合并
+         */
+        option.merge(true);
+
         // 设置同时下载的ts分片数量
         option.setMaxTsQueueNum(10);
 
@@ -132,9 +221,13 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
          * 4、如果指定索引后的切片已经全部下载完成，但是索引前有未下载的切片，间会自动下载未下载的切片
          */
 //        option.setPeerIndex(0);
+        // 设置自定义TS转换器
+//        option.setVodTsUrlConvert(new VodTsConverter());
+        option.setMergeHandler(new TsMergeHandler());
         long taskId = Aria.download(this)
-                .load(m3u8Url)
-                .setFilePath(fileDir.getPath() + "/" + downloadDir + ".ts")
+                .load(mM3u8Url)
+                .setFilePath(fileDir.getPath() + "/" + downloadDir + ".m3u8")
+                .ignoreFilePathOccupy()
                 .m3u8VodOption(option)
                 .create();
         Log.v(TAG, "new task id: " + taskId);
@@ -153,5 +246,23 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
         } else {
             Log.v(TAG, "no tasks!");
         }
+    }
+
+    private boolean isFileExist(String path) {
+        File file = new File(path);
+
+        return file.exists();
+    }
+
+    private int getDirFilesNum(String path) {
+        File file = new File(path);
+        int size = 0;
+
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            size = files.length;
+        }
+
+        return size;
     }
 }

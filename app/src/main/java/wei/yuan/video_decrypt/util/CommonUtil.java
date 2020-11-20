@@ -1,9 +1,11 @@
 package wei.yuan.video_decrypt.util;
 
 import android.graphics.Color;
+import android.net.Uri;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.widget.TextView;
 
 import java.io.ByteArrayOutputStream;
@@ -146,6 +148,31 @@ public class CommonUtil {
         ForegroundColorSpan foregroundColorSpan = new ForegroundColorSpan(Color.parseColor(colorString));
         builder.setSpan(foregroundColorSpan, 0, content.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return builder;
+    }
+
+    /**
+     * 获取地址的子地址
+     * @param url
+     * @return
+     */
+    public static String getParentUrl(String url) {
+        String parentUrl = "";
+        if (url == null || url.isEmpty()) {
+            return parentUrl;
+        }
+
+        Uri uri = Uri.parse(url);
+        String host = uri.getHost();
+        String path = uri.getPath();
+        if (path == null || path.isEmpty()) {
+            parentUrl = host;
+            return parentUrl;
+        }
+        int index = path.lastIndexOf("/");
+        String subPath = path.substring(0, index + 1);
+        parentUrl = "https://" + host + subPath;
+
+        return parentUrl;
     }
 
     private static byte[] toByteArray(FileInputStream fis, long len) {
