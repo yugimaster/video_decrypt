@@ -322,6 +322,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         try {
             String[] strs = fileName.split("\\.");
             String name = strs[0];
+            int pos = name.indexOf("_");
+            if (pos == -1) {
+                return name;
+            }
             String[] s = name.split("_");
             String index = s[2];
             return index;
