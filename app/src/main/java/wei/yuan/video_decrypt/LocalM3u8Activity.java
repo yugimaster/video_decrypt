@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.v4.app.ActivityCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -44,6 +43,7 @@ import java.io.InputStreamReader;
 import java.util.Formatter;
 import java.util.Locale;
 
+import androidx.core.app.ActivityCompat;
 import wei.yuan.video_decrypt.m3u8server.M3u8Server;
 import wei.yuan.video_decrypt.util.CommonUtil;
 import wei.yuan.video_decrypt.util.ParseSystemUtil;

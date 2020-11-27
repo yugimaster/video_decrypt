@@ -2,7 +2,6 @@ package wei.yuan.video_decrypt;
 
 import android.content.BroadcastReceiver;
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.util.Log;
@@ -25,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import androidx.appcompat.app.AppCompatActivity;
 import wei.yuan.video_decrypt.util.AESUtil;
 import wei.yuan.video_decrypt.util.CommonUtil;
 
