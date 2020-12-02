@@ -24,44 +24,70 @@
         android:id="@+id/et_path"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="请输入路径文件" />
+        android:hint="@string/path_hint" />
 
-    <Button
-        android:id="@+id/btn4"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/ll_buttons_row1"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
         app:layout_constraintTop_toBottomOf="@id/et_path"
-        android:text="Decrypt"/>
+        style="@android:style/ButtonBar">
 
-    <Button
-        android:id="@+id/btn1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/et_path"
-        app:layout_constraintLeft_toRightOf="@id/btn4"
-        android:text="M3u8"/>
+        <Button
+            android:id="@+id/btn1"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/open_m3u8"
+            android:textColor="@color/colorBlack"
+            style="?android:buttonBarButtonStyle"/>
 
-    <Button
-        android:id="@+id/btn2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/et_path"
-        app:layout_constraintLeft_toRightOf="@id/btn1"
-        android:text="Download"/>
+        <Button
+            android:id="@+id/btn2"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/ts_download"
+            android:textColor="@color/colorBlack"
+            style="?android:buttonBarButtonStyle"/>
 
-    <Button
-        android:id="@+id/btn3"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/et_path"
-        app:layout_constraintLeft_toRightOf="@id/btn2"
-        android:text="Combine"/>
+        <Button
+            android:id="@+id/btn5"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/play_m3u8"
+            android:textColor="@color/colorBlack"
+            style="?android:buttonBarButtonStyle"/>
+    </LinearLayout>
 
-    <Button
-        android:id="@+id/btn5"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/ll_buttons_row2"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@+id/btn1"
-        android:text="Play"/>
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/ll_buttons_row1"
+        style="@android:style/ButtonBar">
+
+        <Button
+            android:id="@+id/btn3"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/ts_combine"
+            android:textColor="@color/colorBlack"
+            style="?android:buttonBarButtonStyle"/>
+
+        <Button
+            android:id="@+id/btn4"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/ts_decrypt"
+            android:textColor="@color/colorBlack"
+            style="?android:buttonBarButtonStyle"/>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

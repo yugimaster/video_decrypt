@@ -53,6 +53,18 @@ public class M3u8Server extends NanoHTTPD {
     }
 
     /**
+     * 关闭服务
+     */
+    public static void close() {
+        Log.v(TAG, "---close---");
+        if (mM3u8Server != null) {
+            mM3u8Server.stop();
+        }
+
+        Log.i(TAG, "服务关闭\n");
+    }
+
+    /**
      * 重写 serve 方法，获取本地sdcard视频文件
      *
      * @param session The HTTP session

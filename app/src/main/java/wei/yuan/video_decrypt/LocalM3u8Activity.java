@@ -1,6 +1,7 @@
 package wei.yuan.video_decrypt;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -51,7 +52,8 @@ import wei.yuan.video_decrypt.util.ParseSystemUtil;
 public class LocalM3u8Activity extends Activity {
 
     private static final String TAG = "LocalM3u8Activity";
-    private static final String DMM_DIR = "/dmm/swd134/";
+    private static final String SDCARD_DIR = Environment.getExternalStorageDirectory().getPath();
+    private static final String DMM_DIR = SDCARD_DIR + File.separator + "dmm";
 
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
     private static String[] PERMISSIONS_STORAGE = {
@@ -60,6 +62,8 @@ public class LocalM3u8Activity extends Activity {
 
     private SimpleExoPlayer mSimpleExoPlayer;
     private SimpleExoPlayerView mExoPlayerView;
+
+    private Context mContext;
 
     private String m3u8Dir = "";
 
@@ -71,6 +75,8 @@ public class LocalM3u8Activity extends Activity {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         setContentView(R.layout.activity_localm3u8);
+
+        mContext = getApplicationContext();
 
         Intent intent = getIntent();
         Bundle bundle = intent.getBundleExtra("Info");
@@ -98,14 +104,25 @@ public class LocalM3u8Activity extends Activity {
     protected void onPause() {
         Log.v(TAG, "onPause()");
         super.onPause();
-        mSimpleExoPlayer.stop();
+        if (mSimpleExoPlayer != null) {
+            mSimpleExoPlayer.stop();
+        }
     }
 
     @Override
     protected void onStop() {
         Log.v(TAG, "onStop()");
         super.onStop();
-        mSimpleExoPlayer.release();
+        if (mSimpleExoPlayer != null) {
+            mSimpleExoPlayer.release();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.v(TAG, "onDestroy()");
+        super.onDestroy();
+        M3u8Server.close();
     }
 
     private void verifyStoragePermissions(Activity activity) {
@@ -141,18 +158,15 @@ public class LocalM3u8Activity extends Activity {
         Log.v(TAG, "---playVideo---");
 
         if (m3u8Dir.isEmpty()) {
-            Toast.makeText(getApplicationContext(), "请输入m3u8文件所在目录！", Toast.LENGTH_LONG).show();
+            showToastMsg(mContext, "请输入m3u8文件所在目录！");
             return;
         }
 
         keyConvert();
 
-        String sdDir = Environment.getExternalStorageDirectory().getPath();
-        Log.d(TAG, "external storage dir: " + sdDir);
-//        String localUrl = String.format("http://127.0.0.1:%d%s", M3u8Server.PORT, sdDir + "/local_m3u8/local.m3u8");
-//        String localUrl = String.format("http://127.0.0.1:%d%s", M3u8Server.PORT, sdDir + DMM_DIR + "local_swd134.m3u8");
-        String localUrl = String.format("http://127.0.0.1:%d%s", M3u8Server.PORT, sdDir + "/dmm/"
-                + m3u8Dir + "/" + m3u8Dir + ".m3u8");
+        Log.d(TAG, "external storage dir: " + SDCARD_DIR);
+        String localUrl = String.format("http://127.0.0.1:%d%s", M3u8Server.PORT, DMM_DIR + File.separator
+                + m3u8Dir + File.separator + "local.m3u8");
         Log.d(TAG, "localUrl: " + localUrl);
 
         //Prepare the player with the source
@@ -255,25 +269,41 @@ public class LocalM3u8Activity extends Activity {
     }
 
     private void keyConvert() {
-        String sdDir = Environment.getExternalStorageDirectory().getPath();
-        File keyFile = new File(sdDir + "/dmm/" + m3u8Dir + "/key_o.key");
+        File keyFile = new File(DMM_DIR + File.separator + m3u8Dir + File.separator
+                + "key.key");
         if (keyFile.exists()) {
             Log.d(TAG, keyFile.getAbsolutePath() + " exists");
+            if (keyFile.length() == 16) {
+                Log.d(TAG, keyFile.getName() + " is correct");
+                return;
+            } else {
+                Log.d(TAG, "error " + keyFile.getName() + ", delete it...");
+                showToastMsg(mContext, "error " + keyFile.getName());
+                keyFile.delete();
+            }
+        }
+        File keyOriginFile = new File(DMM_DIR + File.separator + m3u8Dir + File.separator
+                + "key_o.key");
+        if (keyOriginFile.exists()) {
+            Log.d(TAG, keyOriginFile.getAbsolutePath() + " exists");
+            if (keyOriginFile.length() != 32) {
+                showToastMsg(mContext, "error " + keyOriginFile.getName());
+                return;
+            }
             try {
-                String keyHexStr = getKeyHex(keyFile);
+                String keyHexStr = getKeyHex(keyOriginFile);
                 byte[] bytes = ParseSystemUtil.parseHexStr2Byte(keyHexStr);
-                File newKey = new File(sdDir + "/dmm/" + m3u8Dir + "/key.key");
-                boolean isSuccess = CommonUtil.writeBinaryFile(bytes, newKey, null);
+                boolean isSuccess = CommonUtil.writeBinaryFile(bytes, keyFile, null);
                 if (isSuccess) {
-                    Log.d(TAG, "create key.key success");
+                    showToastMsg(mContext, "write " + keyFile.getName() + " success");
                 } else {
-                    Log.d(TAG, "create key.key fail");
+                    showToastMsg(mContext, "write " + keyFile.getName() + " fail");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         } else {
-            Log.d(TAG, keyFile.getAbsolutePath() + " doesn't exist");
+            Log.d(TAG, keyOriginFile.getAbsolutePath() + " doesn't exist");
         }
     }
 
@@ -290,5 +320,9 @@ public class LocalM3u8Activity extends Activity {
             e.printStackTrace();
             return "";
         }
+    }
+
+    private void showToastMsg(Context context, String msg) {
+        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
     }
 }

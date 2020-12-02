@@ -1,5 +1,6 @@
 package wei.yuan.video_decrypt;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.os.Bundle;
@@ -78,26 +79,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
+        String path = mEt.getText().toString().replace("\n", "");
+        if (path.isEmpty()) {
+            Toast.makeText(getApplicationContext(), "请输入文件目录！", Toast.LENGTH_LONG).show();
+            return;
+        }
         switch (v.getId()) {
             case R.id.btn1:
                 Log.v(TAG, "start local m3u8 activity");
-                Intent intent1 = new Intent(Intent.ACTION_VIEW);
-                Bundle bundle1 = new Bundle();
-                String path1 = mEt.getText().toString().replace("\n", "");
-                bundle1.putString("directory", path1);
-                intent1.setClassName(getApplicationContext(), LocalM3u8Activity.class.getName());
-                intent1.putExtra("Info", bundle1);
-                startActivity(intent1);
+                startActivity(LocalM3u8Activity.class.getName(), path);
                 break;
             case R.id.btn2:
                 Log.v(TAG, "start download activity");
-                Bundle bundle = new Bundle();
-                Intent intent2 = new Intent(Intent.ACTION_VIEW);
-                String path = mEt.getText().toString().replace("\n", "");
-                bundle.putString("directory", path);
-                intent2.setClassName(getApplicationContext(), DownloadActivity.class.getName());
-                intent2.putExtra("Info", bundle);
-                startActivity(intent2);
+                startActivity(DownloadActivity.class.getName(), path);
                 break;
             case R.id.btn3:
                 mTvConsole.setText("");
@@ -109,17 +103,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.btn5:
                 Log.v(TAG, "start m3u8 vod activity");
-                Intent intent5 = new Intent(Intent.ACTION_VIEW);
-                Bundle bundle5 = new Bundle();
-                String path5 = mEt.getText().toString().replace("\n", "");
-                bundle5.putString("directory", path5);
-                intent5.setClassName(getApplicationContext(), M3U8VodActivity.class.getName());
-                intent5.putExtra("Info", bundle5);
-                startActivity(intent5);
+                startActivity(M3U8VodActivity.class.getName(), path);
                 break;
             default:
                 break;
         }
+    }
+
+    private void startActivity(String className, String path) {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        Bundle bundle = new Bundle();
+        bundle.putString("directory", path);
+        intent.setClassName(getApplicationContext(), className);
+        intent.putExtra("Info", bundle);
+        startActivity(intent);
     }
 
     private void showDebugLog(TextView textView, String log) {
