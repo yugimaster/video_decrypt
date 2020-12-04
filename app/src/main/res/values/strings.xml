@@ -7,4 +7,5 @@
     <string name="ts_download">切片下载</string>
     <string name="ts_combine">切片合并</string>
     <string name="ts_decrypt">切片解密</string>
+    <string name="video_player">播放器播放</string>
 </resources>

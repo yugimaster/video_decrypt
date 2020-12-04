@@ -3,7 +3,9 @@ package wei.yuan.video_decrypt;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.text.SpannableStringBuilder;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -26,6 +28,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import androidx.appcompat.app.AppCompatActivity;
+import wei.yuan.video_decrypt.m3u8server.M3u8Server;
 import wei.yuan.video_decrypt.util.AESUtil;
 import wei.yuan.video_decrypt.util.CommonUtil;
 
@@ -42,6 +45,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button mBtnCombine;
     private Button mBtnDecrypt;
     private Button mBtnPlay;
+    private Button mBtnVideoPlayer;
 
     private BroadcastReceiver mOtgReceiver;
 
@@ -66,6 +70,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mBtnDecrypt.setOnClickListener(this);
         mBtnPlay = (Button) findViewById(R.id.btn5);
         mBtnPlay.setOnClickListener(this);
+        mBtnVideoPlayer = (Button) findViewById(R.id.btn6);
+        mBtnVideoPlayer.setOnClickListener(this);
     }
 
     @Override
@@ -75,6 +81,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             this.unregisterReceiver(mOtgReceiver);
             mOtgReceiver = null;
         }
+        M3u8Server.close();
     }
 
     @Override
@@ -104,6 +111,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btn5:
                 Log.v(TAG, "start m3u8 vod activity");
                 startActivity(M3U8VodActivity.class.getName(), path);
+                break;
+            case R.id.btn6:
+                Log.v(TAG, "use system video player");
+                openVideoPlayer(path);
                 break;
             default:
                 break;
@@ -361,5 +372,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         String indexLeft = getTsIndex(firstFile.getName());
         String indexRight = getTsIndex(lastFile.getName());
         return new File(outDir, dir + "_" + indexLeft + "-" + indexRight + ".wmv");
+    }
+
+    private void openVideoPlayer(String path) {
+        // 开启本地代理
+        M3u8Server.execute();
+        String dmmDir = Environment.getExternalStorageDirectory().getPath() + File.separator + "dmm";
+        String localUrl = String.format("http://127.0.0.1:%d%s", M3u8Server.PORT, dmmDir
+                + File.separator + path + File.separator + "local.m3u8");
+
+        Intent intent = new Intent();
+        intent.setAction(Intent.ACTION_VIEW);
+        String type = "video/*";
+        Uri uri = Uri.parse(localUrl);
+        intent.setDataAndType(uri, type);
+        startActivity(intent);
     }
 }
