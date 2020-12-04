@@ -8,4 +8,9 @@
     <string name="ts_combine">切片合并</string>
     <string name="ts_decrypt">切片解密</string>
     <string name="video_player">播放器播放</string>
+    <string name="permission_storage">请求存储权限</string>
+    <string name="video_part_one">Part 1</string>
+    <string name="video_part_two">Part 2</string>
+    <string name="video_part_three">Part 3</string>
+    <string name="video_part_four">Part 4</string>
 </resources>

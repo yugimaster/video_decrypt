@@ -2,26 +2,70 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:padding="15dp"
     android:orientation="vertical">
+
+    <Button
+        android:id="@+id/btn_permission"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/permission_storage"/>
+
+    <!--<Button-->
+        <!--android:id="@+id/btn2"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_below="@id/btn1"-->
+        <!--android:text="开始播放" />-->
+
+    <LinearLayout
+        android:id="@+id/ll_buttons_part"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_below="@id/btn1">
+
+        <Button
+            android:id="@+id/btn_part1"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/video_part_one"
+            android:visibility="invisible"/>
+
+        <Button
+            android:id="@+id/btn_part2"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/video_part_two"
+            android:visibility="invisible"/>
+
+        <Button
+            android:id="@+id/btn_part3"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/video_part_three"
+            android:visibility="invisible"/>
+
+        <Button
+            android:id="@+id/btn_part4"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/video_part_four"
+            android:visibility="invisible"/>
+
+    </LinearLayout>
 
     <com.google.android.exoplayer2.ui.SimpleExoPlayerView
         android:id="@+id/exoView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_below="@id/ll_buttons_part"
+        android:layout_marginTop="5dp">
 
     </com.google.android.exoplayer2.ui.SimpleExoPlayerView>
-
-    <Button
-        android:id="@+id/btn1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="请求存储权限" />
-
-    <Button
-        android:id="@+id/btn2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/btn1"
-        android:text="开始播放" />
 
 </RelativeLayout>
