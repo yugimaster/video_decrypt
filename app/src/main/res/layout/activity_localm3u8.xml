@@ -11,19 +11,12 @@
         android:layout_height="wrap_content"
         android:text="@string/permission_storage"/>
 
-    <!--<Button-->
-        <!--android:id="@+id/btn2"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_below="@id/btn1"-->
-        <!--android:text="开始播放" />-->
-
     <LinearLayout
         android:id="@+id/ll_buttons_part"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_below="@id/btn1">
+        android:layout_below="@id/btn_permission">
 
         <Button
             android:id="@+id/btn_part1"

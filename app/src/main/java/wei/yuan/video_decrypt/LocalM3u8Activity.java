@@ -1,7 +1,9 @@
 package wei.yuan.video_decrypt;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -153,16 +155,16 @@ public class LocalM3u8Activity extends Activity implements View.OnClickListener 
                 verifyStoragePermissions(LocalM3u8Activity.this);
                 break;
             case R.id.btn_part1:
-                startVideoPartPlay("1");
+                chosePlayMode("1");
                 break;
             case R.id.btn_part2:
-                startVideoPartPlay("2");
+                chosePlayMode("2");
                 break;
             case R.id.btn_part3:
-                startVideoPartPlay("3");
+                chosePlayMode("3");
                 break;
             case R.id.btn_part4:
-                startVideoPartPlay("4");
+                chosePlayMode("4");
                 break;
             default:
                 break;
@@ -464,5 +466,44 @@ public class LocalM3u8Activity extends Activity implements View.OnClickListener 
 
         initPlayer();
         playVideo(videoPath, m3u8Path);
+    }
+
+    private void startVideoPartWithLocalPlayer(String part) {
+        String videoPath = DMM_DIR + File.separator + m3u8Dir;
+        String m3u8Path = "";
+        if (part.equals("1") && isSingle) {
+            m3u8Path = videoPath + File.separator + "local.m3u8";
+        } else {
+            m3u8Path = videoPath + File.separator + part + File.separator + "local.m3u8";
+        }
+
+        String localUrl = String.format("http://127.0.0.1:%d%s", M3u8Server.PORT, m3u8Path);
+        Log.d(TAG, "localUrl: " + localUrl);
+        Intent intent = new Intent();
+        intent.setAction(Intent.ACTION_VIEW);
+        String type = "video/*";
+        Uri uri = Uri.parse(localUrl);
+        intent.setDataAndType(uri, type);
+        startActivity(intent);
+    }
+
+    private void chosePlayMode(String part) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this,
+                R.style.Theme_AppCompat_Light_Dialog);
+        builder.setTitle("选择播放模式");
+        final String[] modes = {"ExoPlayer", "LocalAppPlayer"};
+        builder.setItems(modes, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                String currentMode = modes[i];
+                showToastMsg(mContext, "Mode: " + currentMode);
+                if (i == 0) {
+                    startVideoPartPlay(part);
+                } else {
+                    startVideoPartWithLocalPlayer(part);
+                }
+            }
+        });
+        builder.show();
     }
 }
