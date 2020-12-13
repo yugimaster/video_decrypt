@@ -28,6 +28,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import wei.yuan.video_decrypt.m3u8server.M3u8Server;
 import wei.yuan.video_decrypt.util.CommonUtil;
 
 public class M3U8VodActivity extends Activity implements View.OnClickListener {
@@ -39,6 +40,7 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
     private EditText mETUrl;
     private Button mBtnPlay;
     private Button mBtnClear;
+    private Button mBtnLocalPlay;
 
     private String downloadDir = "";
     private String mM3u8Url = "";
@@ -56,6 +58,8 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
         initView();
         // 注册aria
         Aria.download(this).register();
+
+        M3u8Server.execute();
     }
 
     @Override
@@ -71,16 +75,21 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
 
         // 取消注册aria
         Aria.download(this).unRegister();
+
+        M3u8Server.close();
     }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_play:
-                playM3U8Vod();
+                playM3U8Vod(false);
                 break;
             case R.id.btn_clear:
                 clearDownloadTasks();
+                break;
+            case R.id.btn_local_play:
+                playM3U8Vod(true);
                 break;
             default:
                 break;
@@ -129,8 +138,14 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
             String parentUrl = CommonUtil.getParentUrl(m3u8Url);
             List<String> newUrls = new ArrayList<>();
             for (String url : tsUrls) {
-                Log.d(TAG, "new ts url: " + parentUrl + url);
-                newUrls.add(parentUrl + url);
+                Log.d(TAG, "ts url: " + url);
+                if (url.startsWith("https://cdn-mso4.kiseouhgf.info")
+                        || url.startsWith(" https://cflstc.r18.com")) {
+                    newUrls.add(url);
+                } else {
+                    Log.d(TAG, "new ts url: " + parentUrl + url);
+                    newUrls.add(parentUrl + url);
+                }
             }
 
             // 返回有效的ts文件url集合
@@ -161,9 +176,11 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
         mBtnPlay.setOnClickListener(this);
         mBtnClear = (Button) findViewById(R.id.btn_clear);
         mBtnClear.setOnClickListener(this);
+        mBtnLocalPlay = (Button) findViewById(R.id.btn_local_play);
+        mBtnLocalPlay.setOnClickListener(this);
     }
 
-    private void playM3U8Vod() {
+    private void playM3U8Vod(boolean isLocal) {
         Log.v(TAG, "playM3U8Vod()");
 
         downloadDir = mETDir.getText().toString().trim();
@@ -177,7 +194,11 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
             Toast.makeText(getApplicationContext(), "无效的下载目录！", Toast.LENGTH_LONG).show();
             return;
         }
-        mM3u8Url = mETUrl.getText().toString().trim().replace("\n", "");
+        if (isLocal) {
+            mM3u8Url = getLocalM3u8Url(fileDir.getPath());
+        } else {
+            mM3u8Url = mETUrl.getText().toString().trim().replace("\n", "");
+        }
         if (mM3u8Url.isEmpty()) {
             Toast.makeText(getApplicationContext(), "请输入m3u8地址！", Toast.LENGTH_LONG).show();
             return;
@@ -186,7 +207,7 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
         // m3u8点播配置
         M3U8VodOption option = new M3U8VodOption();
         // 设置密钥文件的保存路径
-        option.setKeyPath(fileDir.getPath() + "/key.key");
+//        option.setKeyPath(fileDir.getPath() + "/key.key");
 
         /*
          * 是否使用默认转换器
@@ -199,14 +220,14 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
         /*
          * 是否生成本地m3u8索引文件
          */
-//        option.generateIndexFile();
+        option.generateIndexFile();
 
         /*
          * 是否合并ts文件
          * true: 合并
          * false: 不合并
          */
-        option.merge(true);
+        option.merge(false);
 
         // 设置同时下载的ts分片数量
         option.setMaxTsQueueNum(10);
@@ -223,10 +244,13 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
 //        option.setPeerIndex(0);
         // 设置自定义TS转换器
 //        option.setVodTsUrlConvert(new VodTsConverter());
-        option.setMergeHandler(new TsMergeHandler());
+//        option.setMergeHandler(new TsMergeHandler());
+        // 忽略下载失败的ts文件
+//        option.ignoreFailureTs();
+        String lowestDir = getLowestDirName(fileDir.getPath());
         long taskId = Aria.download(this)
                 .load(mM3u8Url)
-                .setFilePath(fileDir.getPath() + "/" + downloadDir + ".m3u8")
+                .setFilePath(fileDir.getPath() + "/" + lowestDir + ".m3u8")
                 .ignoreFilePathOccupy()
                 .m3u8VodOption(option)
                 .create();
@@ -264,5 +288,24 @@ public class M3U8VodActivity extends Activity implements View.OnClickListener {
         }
 
         return size;
+    }
+
+    private String getLowestDirName(String downloadPath) {
+        String name = "";
+        int index = downloadPath.lastIndexOf("/");
+        if (index == -1) {
+            name = downloadPath;
+        } else {
+            name = downloadPath.substring(index + 1);
+        }
+
+        return name;
+    }
+
+    private String getLocalM3u8Url(String filePath) {
+        String m3u8Path = filePath + File.separator + "local.m3u8";
+        String localUrl = String.format("http://127.0.0.1:%d%s", M3u8Server.PORT, m3u8Path);
+
+        return localUrl;
     }
 }

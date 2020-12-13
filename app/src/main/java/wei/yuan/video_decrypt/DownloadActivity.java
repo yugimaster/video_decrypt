@@ -286,6 +286,10 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
     private void httpMultiDownloadGroup(String url, String offset) {
         String firstFileName = generateFileName(url);
         String firstIndex = getTsIndex(firstFileName);
+        if (firstIndex.isEmpty()) {
+            httpSingleDownload(url, firstFileName);
+            return;
+        }
         List<String> urls = new ArrayList<String>();
         List<String> names = new ArrayList<String>();
         String curUrl = "";
