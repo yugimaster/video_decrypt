@@ -42,6 +42,11 @@
             android:name=".M3U8VodActivity"
             android:screenOrientation="portrait">
         </activity>
+
+        <activity
+            android:name=".M3U8AnalysisActivity"
+            android:screenOrientation="portrait">
+        </activity>
     </application>
 
 </manifest>

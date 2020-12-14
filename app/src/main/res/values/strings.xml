@@ -4,6 +4,7 @@
     <string name="path_hint">请输入路径文件</string>
     <string name="open_m3u8">打开M3U8</string>
     <string name="play_m3u8">播放M3U8</string>
+    <string name="analysis_m3u8">解析M3U8</string>
     <string name="ts_download">切片下载</string>
     <string name="ts_combine">切片合并</string>
     <string name="ts_decrypt">切片解密</string>

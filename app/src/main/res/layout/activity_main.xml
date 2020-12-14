@@ -103,4 +103,23 @@
         </Button>
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/ll_buttons_row3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="5dp"
+        app:layout_constraintTop_toBottomOf="@id/ll_buttons_row2"
+        style="@android:style/ButtonBar">
+
+        <Button
+            android:id="@+id/btn7"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/analysis_m3u8"
+            android:textColor="@color/colorBlack"
+            style="?android:buttonBarButtonStyle"/>
+    </LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

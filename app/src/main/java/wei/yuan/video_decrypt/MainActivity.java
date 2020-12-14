@@ -46,6 +46,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button mBtnDecrypt;
     private Button mBtnPlay;
     private Button mBtnVideoPlayer;
+    private Button mBtnAnalysis;
 
     private BroadcastReceiver mOtgReceiver;
 
@@ -72,6 +73,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mBtnPlay.setOnClickListener(this);
         mBtnVideoPlayer = (Button) findViewById(R.id.btn6);
         mBtnVideoPlayer.setOnClickListener(this);
+        mBtnAnalysis = (Button) findViewById(R.id.btn7);
+        mBtnAnalysis.setOnClickListener(this);
     }
 
     @Override
@@ -115,6 +118,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btn6:
                 Log.v(TAG, "use system video player");
                 openVideoPlayer(path);
+                break;
+            case R.id.btn7:
+                Log.v(TAG, "m3u8 analysis activity");
+                startActivity(M3U8AnalysisActivity.class.getName(), path);
                 break;
             default:
                 break;
