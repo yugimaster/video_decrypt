@@ -251,11 +251,29 @@ public class M3U8AnalysisActivity extends BaseActivity {
         if (!tsDir.exists()) {
             tsDir.mkdir();
         }
+        List<String> downloadUrls = new ArrayList<String>();
+        List<String> downloadNames = new ArrayList<String>();
+        for (int i = 0; i < mTsNames.size(); i++) {
+            String url = mTsUrls.get(i);
+            String name = mTsNames.get(i);
+            File tsFile = new File(m3u8Dir + File.separator + "ts" + File.separator + name);
+            if (!tsFile.exists()) {
+                downloadUrls.add(url);
+                downloadNames.add(name);
+            } else if (tsFile.length() == 0) {
+                tsFile.delete();
+                downloadUrls.add(url);
+                downloadNames.add(name);
+            }
+        }
+        Log.v(TAG, "download urls size: " + downloadUrls.size());
+        Log.v(TAG, "download names size: " + downloadNames.size());
         long taskId = Aria.download(this)
-                .loadGroup(mTsUrls)
+                .loadGroup(downloadUrls)
                 .setDirPath(tsPath)
-                .setSubFileName(mTsNames)
+                .setSubFileName(downloadNames)
                 .unknownSize()
+                .ignoreTaskOccupy()
                 .create();
         Log.d(TAG, "current task id: " + taskId);
     }
@@ -285,7 +303,7 @@ public class M3U8AnalysisActivity extends BaseActivity {
     }
 
     private void setSpannableString(TextView tv, String content, String colorString) {
-        SpannableStringBuilder builder = CommonUtil.setSpannableString(content, "#4D8ADE");
+        SpannableStringBuilder builder = CommonUtil.setSpannableString(content, colorString);
         tv.append(builder);
     }
 }
