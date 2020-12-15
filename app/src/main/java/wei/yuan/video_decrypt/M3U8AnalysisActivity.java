@@ -9,7 +9,9 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.text.SpannableStringBuilder;
 import android.util.Log;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.arialyy.annotations.DownloadGroup;
@@ -25,6 +27,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -35,7 +40,7 @@ import androidx.annotation.Nullable;
 import wei.yuan.video_decrypt.activity.BaseActivity;
 import wei.yuan.video_decrypt.util.CommonUtil;
 
-public class M3U8AnalysisActivity extends BaseActivity {
+public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickListener {
 
     private final static String TAG = "M3U8AnalysisActivity";
     private final static String SDCARD_DIR = Environment.getExternalStorageDirectory().getPath();
@@ -52,10 +57,16 @@ public class M3U8AnalysisActivity extends BaseActivity {
     private File mTargetFile;
 
     private TextView mTvConsole;
+    private Button mBtnAnalysis;
+    private Button mBtnCombine;
 
     private String m3u8Dir;
     private List<String> mTsUrls;
     private List<String> mTsNames;
+
+    private int tsTotalCount = 0;
+    private int tsZeroCount = 0;
+    private int tsDownloadedCount = 0;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -76,9 +87,53 @@ public class M3U8AnalysisActivity extends BaseActivity {
         mTsUrls = new ArrayList<String>();
         mTsNames = new ArrayList<String>();
 
-        mTvConsole = (TextView) findViewById(R.id.consoleText);
+        initView();
 
-        analysisM3U8();
+        // 注册aria
+        Aria.download(this).register();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.v(TAG, "onResume()");
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.v(TAG, "onStart()");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.v(TAG, "onStop()");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.v(TAG, "onDestroy()");
+
+        // 取消注册aria
+        Aria.download(this).unRegister();
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.btn_analysis:
+                Log.v(TAG, "start analysis m3u8");
+                analysisM3U8();
+                break;
+            case R.id.btn_combine:
+                Log.v(TAG, "start combine ts");
+                combineTsFiles();
+                break;
+            default:
+                break;
+        }
     }
 
     @DownloadGroup.onPre void onPre(DownloadGroupTask task) {
@@ -175,6 +230,32 @@ public class M3U8AnalysisActivity extends BaseActivity {
         }
     };
 
+    private Runnable combineTsFilesRunnable = new Runnable() {
+        @Override
+        public void run() {
+            boolean flag = combineTsToOutput(mTargetFile);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (flag) {
+                        setSpannableString(mTvConsole, "combine ts success\n", "#4D8ADE");
+                    } else {
+                        setSpannableString(mTvConsole, "combine ts failed\n", "#FF0000");
+                    }
+                    dismissLoadingDialog();
+                }
+            });
+        }
+    };
+
+    private void initView() {
+        mTvConsole = (TextView) findViewById(R.id.consoleText);
+        mBtnAnalysis = (Button) findViewById(R.id.btn_analysis);
+        mBtnCombine = (Button) findViewById(R.id.btn_combine);
+        mBtnAnalysis.setOnClickListener(this);
+        mBtnCombine.setOnClickListener(this);
+    }
+
     private void analysisM3U8() {
         Log.v(TAG, "analysisM3U8()");
         showLoadingDialog();
@@ -187,6 +268,89 @@ public class M3U8AnalysisActivity extends BaseActivity {
             mTargetFile = file;
             threadExecutor.execute(analysisM3u8FileRunnable);
         }
+    }
+
+    private void combineTsFiles() {
+        Log.v(TAG, "combineTsFiles()");
+        showLoadingDialog();
+        File tsDir = new File(m3u8Dir + File.separator + "ts");
+        if (!tsDir.exists() || !tsDir.isDirectory()) {
+            dismissLoadingDialog();
+            showToastMsg(mContext, tsDir.getPath() + " doesn't exist!");
+        } else {
+            mTargetFile = tsDir;
+            threadExecutor.execute(combineTsFilesRunnable);
+        }
+    }
+
+    private boolean combineTsToOutput(File target) {
+        File outputDir = new File(m3u8Dir + File.separator + "output");
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
+        }
+        List<File> files = Arrays.asList(target.listFiles());
+        if (files.size() == 0) {
+            return false;
+        }
+        Collections.sort(files, new Comparator<File>() {
+            @Override
+            public int compare(File o1, File o2) {
+                if (o1.isDirectory() && o2.isFile())
+                    return -1;
+                if (o1.isFile() && o2.isDirectory())
+                    return 1;
+                if (o1.getName().length() < o2.getName().length())
+                    return -1;
+                if (o1.getName().length() > o2.getName().length())
+                    return 1;
+                return o1.getName().compareTo(o2.getName());
+            }
+        });
+        int total = files.size();
+        File output = new File(outputDir + File.separator + "all.wmv");
+        for (int i = 0; i < files.size(); i++) {
+            File file = files.get(i);
+            byte[] tsData = CommonUtil.readBinaryFile(file);
+            if (tsData == null) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        showDebugLog(mTvConsole, file.getName() + " is null");
+                    }
+                });
+                total -= 1;
+                continue;
+            }
+            boolean isSuccess = CommonUtil.writeBinaryFileAppend(tsData, output, mTvConsole);
+            if (isSuccess) {
+                float percent = Float.valueOf(String.valueOf(i + 1)) * 100 / Float.valueOf(String.valueOf(files.size()));
+                String msg = String.format("Combinig %s + into data......\ntotal: %d\npercent: %.1f",
+                        file.getName(), total, percent);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        showDebugLog(mTvConsole, msg);
+                    }
+                });
+            } else {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        showDebugLog(mTvConsole, "Combine " + file.getName() + " failed");
+                    }
+                });
+                total -= 1;
+            }
+        }
+        Log.v(TAG, "Combine finished");
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                SpannableStringBuilder builder = CommonUtil.setSpannableString("Combine finished\n", "#4D8ADE");
+                mTvConsole.append(builder);
+            }
+        });
+        return true;
     }
 
     private boolean m3u8Loader() {
@@ -206,8 +370,15 @@ public class M3U8AnalysisActivity extends BaseActivity {
                     name = generateFileName(line);
                     mTsUrls.add(line);
                     mTsNames.add(name);
+                    int d = isTsFileDownloaded(name);
+                    if (d == 1) {
+                        tsDownloadedCount += 1;
+                    } else if (d == 2) {
+                        tsZeroCount += 1;
+                    }
                 }
             }
+            tsTotalCount = i;
             Log.d(TAG, "ts total count: " + i);
             return true;
         } catch (FileNotFoundException e) {
@@ -230,14 +401,16 @@ public class M3U8AnalysisActivity extends BaseActivity {
     private void openTsDownloadDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this,
                 R.style.Theme_AppCompat_Light_Dialog);
-        builder.setTitle("当前解析 " + mTsUrls.size() + " ts下载址址");
-        final String[] modes = {"Download", "Cancel"};
+        showAnalysisMsg();
+        builder.setTitle("当前解析 " + tsTotalCount + " ts下载址址");
+        final String[] modes = {getString(R.string.download_now), getString(R.string.cancel)};
         builder.setItems(modes, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 String currentMode = modes[i];
                 showToastMsg(mContext, "Mode: " + currentMode);
                 if (i == 0) {
+                    mTvConsole.setText("");
                     tsListDownload();
                 }
             }
@@ -305,5 +478,48 @@ public class M3U8AnalysisActivity extends BaseActivity {
     private void setSpannableString(TextView tv, String content, String colorString) {
         SpannableStringBuilder builder = CommonUtil.setSpannableString(content, colorString);
         tv.append(builder);
+    }
+
+    private void showAnalysisMsg() {
+        int remain = tsTotalCount - tsDownloadedCount - tsZeroCount;
+        mTvConsole.append("====================\n总ts文件 ");
+        setSpannableString(mTvConsole, String.valueOf(tsTotalCount), "#4D8ADE");
+        mTvConsole.append(" 个\n已下载 ");
+        setSpannableString(mTvConsole, String.valueOf(tsDownloadedCount), "#00FF00");
+        mTvConsole.append(" 个\n大小为0的 ");
+        setSpannableString(mTvConsole, String.valueOf(tsZeroCount), "#FF0000");
+        mTvConsole.append(" 个\n未下载 ");
+        setSpannableString(mTvConsole, String.valueOf(remain), "#BEBEBE");
+        mTvConsole.append(" 个\n====================\n");
+    }
+
+    /**
+     * 判断文件是否下载
+     * @param fileName
+     * @return int
+     * 0 未下载
+     * 1 已下载
+     * 2 文件大小为0
+     */
+    private int isTsFileDownloaded(String fileName) {
+        File tsFile = new File(m3u8Dir + File.separator + "ts" + File.separator + fileName);
+        File zeroFile = new File(m3u8Dir + File.separator + "0" + File.separator + fileName);
+        if (tsFile.exists()) {
+            if (tsFile.length() == 0) {
+                return 2;
+            } else {
+                return 1;
+            }
+        } else if (zeroFile.exists()) {
+            return 2;
+        }
+
+        return 0;
+    }
+
+    private void showDebugLog(TextView textView, String log) {
+        Log.d(TAG, log);
+        String msg = log + "\n";
+        textView.append(msg);
     }
 }

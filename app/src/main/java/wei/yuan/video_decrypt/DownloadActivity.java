@@ -336,7 +336,7 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
     }
 
     private void setSpannableString(TextView tv, String content, String colorString) {
-        SpannableStringBuilder builder = CommonUtil.setSpannableString(content, "#4D8ADE");
+        SpannableStringBuilder builder = CommonUtil.setSpannableString(content, colorString);
         tv.append(builder);
     }
 
