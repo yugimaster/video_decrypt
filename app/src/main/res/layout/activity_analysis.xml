@@ -4,20 +4,6 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <ScrollView
-        android:id="@+id/scroller"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <TextView
-            android:id="@+id/consoleText"
-            android:textIsSelectable="true"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:typeface="monospace" />
-
-    </ScrollView>
-
     <Button
         android:id="@+id/btn_analysis"
         android:layout_width="wrap_content"
@@ -33,5 +19,28 @@
         android:layout_marginTop="10dp"
         app:layout_constraintStart_toEndOf="@id/btn_analysis"
         android:text="@string/ts_combine"/>
+
+    <Button
+        android:id="@+id/btn_cancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        app:layout_constraintLeft_toRightOf="@id/btn_combine"
+        android:text="@string/cancel"/>
+
+    <ScrollView
+        android:id="@+id/scroller"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/btn_analysis">
+
+        <TextView
+            android:id="@+id/consoleText"
+            android:textIsSelectable="true"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:typeface="monospace" />
+
+    </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

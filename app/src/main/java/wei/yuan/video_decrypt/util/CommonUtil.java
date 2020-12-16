@@ -8,10 +8,16 @@ import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.widget.TextView;
 
+import com.arialyy.aria.util.FileUtil;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Locale;
 
 /**
@@ -173,6 +179,51 @@ public class CommonUtil {
         parentUrl = "https://" + host + subPath;
 
         return parentUrl;
+    }
+
+    /**
+     * 拷贝文件
+     * @param source
+     * @param destination
+     * @return
+     */
+    public static boolean fileCopy(File source, File destination) {
+        if (!source.exists()) {
+            return false;
+        }
+        BufferedInputStream reader = null;
+        BufferedOutputStream writer = null;
+        try {
+            if (!destination.exists()) {
+                destination.createNewFile();
+            }
+            reader = new BufferedInputStream(new FileInputStream(source));
+            writer = new BufferedOutputStream(new FileOutputStream(destination));
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = reader.read(buffer)) != -1) {
+                writer.write(buffer, 0, length);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (writer != null) {
+                try {
+                    writer.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return true;
     }
 
     private static byte[] toByteArray(FileInputStream fis, long len) {

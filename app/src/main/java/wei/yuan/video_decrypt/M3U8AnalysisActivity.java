@@ -59,10 +59,13 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private TextView mTvConsole;
     private Button mBtnAnalysis;
     private Button mBtnCombine;
+    private Button mBtnCancel;
 
     private String m3u8Dir;
     private List<String> mTsUrls;
     private List<String> mTsNames;
+
+    private long mTaskId = -1;
 
     private int tsTotalCount = 0;
     private int tsZeroCount = 0;
@@ -91,6 +94,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
         // 注册aria
         Aria.download(this).register();
+        clearDownloadGroupTasks();
     }
 
     @Override
@@ -131,6 +135,10 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
                 Log.v(TAG, "start combine ts");
                 combineTsFiles();
                 break;
+            case R.id.btn_cancel:
+                Log.v(TAG, "cancel current download group task");
+                cancelDownloadGroupTask(mTaskId);
+                break;
             default:
                 break;
         }
@@ -158,24 +166,33 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
     @DownloadGroup.onTaskStop void taskStop(DownloadGroupTask task) {
         Log.v(TAG, "DownloadGroup stop");
+        clearArrayLists();
     }
 
     @DownloadGroup.onTaskCancel void taskCancel(DownloadGroupTask task) {
         Log.v(TAG, "DownloadGroup cancel");
+        cancelDownloadGroupTask(mTaskId);
+        setSpannableString(mTvConsole, "DownloadGroup cancel" + "\n", "#4D8ADE");
+        mTaskId = -1;
+        clearArrayLists();
     }
 
     @DownloadGroup.onTaskFail void taskFail(DownloadGroupTask task) {
         String msg = "DownloadGroup fail";
         Log.v(TAG, msg);
+        cancelDownloadGroupTask(mTaskId);
         setSpannableString(mTvConsole, msg + "\n", "#FF0000");
-        clearDownloadGroupTasks();
+        mTaskId = -1;
+        clearArrayLists();
     }
 
     @DownloadGroup.onTaskComplete void taskComplete(DownloadGroupTask task) {
         String msg = "DownloadGroup complete";
         Log.v(TAG, "DownloadGroup complete");
+        cancelDownloadGroupTask(mTaskId);
         setSpannableString(mTvConsole, msg + "\n", "#4D8ADE");
-        clearDownloadGroupTasks();
+        mTaskId = -1;
+        clearArrayLists();
     }
 
     @DownloadGroup.onSubTaskRunning void onSubTaskRunning(DownloadGroupTask groupTask, DownloadEntity subEntity) {
@@ -201,6 +218,13 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         String msg = "[" + subEntity.getFileName() + "] complete";
         Log.d(TAG, msg);
         mTvConsole.append(msg + "\n");
+        String srcPath = m3u8Dir + File.separator + "ts" + File.separator + subEntity.getFileName();
+        File zeroDir = new File(m3u8Dir + File.separator + "0");
+        if (!zeroDir.exists()) {
+            zeroDir.mkdirs();
+        }
+        String tarPath = zeroDir.getPath() + File.separator + subEntity.getFileName();
+        moveFileToZeroDir(srcPath, tarPath);
     }
 
     @DownloadGroup.onSubTaskFail void onSubTaskFail(DownloadGroupTask groupTask, DownloadEntity subEntity) {
@@ -252,8 +276,10 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         mTvConsole = (TextView) findViewById(R.id.consoleText);
         mBtnAnalysis = (Button) findViewById(R.id.btn_analysis);
         mBtnCombine = (Button) findViewById(R.id.btn_combine);
+        mBtnCancel = (Button) findViewById(R.id.btn_cancel);
         mBtnAnalysis.setOnClickListener(this);
         mBtnCombine.setOnClickListener(this);
+        mBtnCancel.setOnClickListener(this);
     }
 
     private void analysisM3U8() {
@@ -449,6 +475,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
                 .ignoreTaskOccupy()
                 .create();
         Log.d(TAG, "current task id: " + taskId);
+        mTaskId = taskId;
     }
 
     private boolean clearDownloadGroupTasks() {
@@ -468,6 +495,15 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         }
 
         return flag;
+    }
+
+    private void cancelDownloadGroupTask(long taskId) {
+        Log.v(TAG, "DownloadGroup taskId: " + taskId);
+        if (taskId == -1) {
+            setSpannableString(mTvConsole, "invalid task id!" + "\n", "#FF0000");
+            return;
+        }
+        Aria.download(this).loadGroup(taskId).cancel();
     }
 
     private String generateFileName(String url) {
@@ -521,5 +557,40 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         Log.d(TAG, log);
         String msg = log + "\n";
         textView.append(msg);
+    }
+
+    private void clearArrayLists() {
+        if (mTsUrls != null && mTsUrls.size() > 0) {
+            mTsUrls.clear();
+        }
+        if (mTsNames != null && mTsNames.size() > 0) {
+            mTsNames.clear();
+        }
+    }
+
+    private void moveFileToZeroDir(String srcPath, String targetPath) {
+        File source = new File(srcPath);
+        File target = new File(targetPath);
+        threadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (source.exists()) {
+                    if (source.length() == 0) {
+                        Log.d(TAG, source.getPath() + " copy to the zero dir...");
+                        boolean flag = CommonUtil.fileCopy(source, target);
+                        if (flag) {
+                            Log.d(TAG, "copy success");
+                            source.delete();
+                        } else {
+                            Log.d(TAG, "copy failed");
+                        }
+                    } else {
+                        Log.d(TAG, source.getPath() + " not need to copy to the zero dir!");
+                    }
+                } else {
+                    Log.d(TAG, source.getPath() + " doesn't exist");
+                }
+            }
+        });
     }
 }
