@@ -15,8 +15,10 @@
     <string name="video_part_three">Part 3</string>
     <string name="video_part_four">Part 4</string>
     <string name="analysis">解析</string>
+    <string name="ok">确定</string>
     <string name="cancel">取消</string>
     <string name="download_now">开始下载</string>
     <string name="download_resume">继续下载</string>
     <string name="download_restart">重新下载</string>
+    <string name="deduplicate">去重</string>
 </resources>
