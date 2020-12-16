@@ -60,6 +60,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private Button mBtnAnalysis;
     private Button mBtnCombine;
     private Button mBtnCancel;
+    private Button mBtnDeduplicate;
 
     private String m3u8Dir;
     private List<String> mTsUrls;
@@ -139,6 +140,10 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
                 Log.v(TAG, "cancel current download group task");
                 cancelDownloadGroupTask(mTaskId);
                 break;
+            case R.id.btn_deduplicate:
+                Log.v(TAG, "delete duplicated files");
+                gotoDeduplication();
+                break;
             default:
                 break;
         }
@@ -192,7 +197,6 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         cancelDownloadGroupTask(mTaskId);
         setSpannableString(mTvConsole, msg + "\n", "#4D8ADE");
         mTaskId = -1;
-        clearArrayLists();
     }
 
     @DownloadGroup.onSubTaskRunning void onSubTaskRunning(DownloadGroupTask groupTask, DownloadEntity subEntity) {
@@ -230,7 +234,6 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     @DownloadGroup.onSubTaskFail void onSubTaskFail(DownloadGroupTask groupTask, DownloadEntity subEntity) {
         String msg = "[" + subEntity.getFileName() + "] fail";
         Log.d(TAG, msg);
-        setSpannableString(mTvConsole, msg + "\n", "#FF0000");
     }
 
     private Runnable analysisM3u8FileRunnable = new Runnable() {
@@ -277,9 +280,11 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         mBtnAnalysis = (Button) findViewById(R.id.btn_analysis);
         mBtnCombine = (Button) findViewById(R.id.btn_combine);
         mBtnCancel = (Button) findViewById(R.id.btn_cancel);
+        mBtnDeduplicate = (Button) findViewById(R.id.btn_deduplicate);
         mBtnAnalysis.setOnClickListener(this);
         mBtnCombine.setOnClickListener(this);
         mBtnCancel.setOnClickListener(this);
+        mBtnDeduplicate.setOnClickListener(this);
     }
 
     private void analysisM3U8() {
@@ -291,6 +296,9 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
             dismissLoadingDialog();
             showToastMsg(mContext, file.getPath() + " doesn't exist!");
         } else {
+            tsTotalCount = 0;
+            tsDownloadedCount = 0;
+            tsZeroCount = 0;
             mTargetFile = file;
             threadExecutor.execute(analysisM3u8FileRunnable);
         }
@@ -592,5 +600,74 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
                 }
             }
         });
+    }
+
+    private void gotoDeduplication() {
+        threadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                deduplication();
+            }
+        });
+    }
+
+    /**
+     * ts文件去重
+     */
+    private void deduplication() {
+        File zeroDir = new File(m3u8Dir + File.separator + "0");
+        if (!zeroDir.exists() || !zeroDir.isDirectory()) {
+            Log.v(TAG, zeroDir.getPath() + " not exist!");
+            return;
+        }
+        File[] zeroFiles = zeroDir.listFiles();
+        if (zeroFiles == null || zeroFiles.length == 0) {
+            Log.v(TAG, zeroDir.getPath() + " is empty!");
+            return;
+        }
+        File tsDir = new File(m3u8Dir + File.separator + "ts");
+        if (!tsDir.exists() || !tsDir.isDirectory()) {
+            Log.v(TAG, tsDir.getPath() + " not exist!");
+            return;
+        }
+        File[] tsFiles = tsDir.listFiles();
+        if (tsFiles == null || tsFiles.length == 0) {
+            Log.v(TAG, tsDir.getPath() + " is empty!");
+            return;
+        }
+        int count = 0;
+        List<String> zeroFileNames = new ArrayList<String>();
+        for (File zeroFile : zeroFiles) {
+            zeroFileNames.add(zeroFile.getName());
+        }
+        for (File tsFile : tsFiles) {
+            String name = tsFile.getName();
+            if (zeroFileNames.contains(name)) {
+                File file = new File(zeroDir, name);
+                file.delete();
+                count += 1;
+            }
+        }
+
+        final int total = count;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                openDeduplicationResultDialog(total);
+            }
+        });
+    }
+
+    private void openDeduplicationResultDialog(int count) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this,
+                R.style.Theme_AppCompat_Light_Dialog);
+        builder.setTitle("去重 " + count + " 个文件");
+        final String[] modes = {getString(R.string.ok)};
+        builder.setItems(modes, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+            }
+        });
+        builder.show();
     }
 }

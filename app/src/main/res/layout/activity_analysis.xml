@@ -28,6 +28,14 @@
         app:layout_constraintLeft_toRightOf="@id/btn_combine"
         android:text="@string/cancel"/>
 
+    <Button
+        android:id="@+id/btn_deduplicate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        app:layout_constraintLeft_toRightOf="@id/btn_cancel"
+        android:text="@string/deduplicate"/>
+
     <ScrollView
         android:id="@+id/scroller"
         android:layout_width="match_parent"
