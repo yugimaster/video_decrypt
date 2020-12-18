@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.arialyy.annotations.DownloadGroup;
@@ -39,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import androidx.annotation.Nullable;
 import wei.yuan.video_decrypt.activity.BaseActivity;
 import wei.yuan.video_decrypt.util.CommonUtil;
+import wei.yuan.video_decrypt.view.DownloadProgressBar;
 
 public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickListener {
 
@@ -57,12 +59,18 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private File mTargetFile;
 
     private TextView mTvConsole;
+    private TextView mTvCount;
+    private TextView mTvSpeed;
     private Button mBtnAnalysis;
     private Button mBtnCombine;
     private Button mBtnCancel;
     private Button mBtnDeduplicate;
 
+    private RelativeLayout mProgressLayout;
+    private DownloadProgressBar mProgressBar;
+
     private String m3u8Dir;
+    private String mSpeed = "1";
     private List<String> mTsUrls;
     private List<String> mTsNames;
 
@@ -71,6 +79,10 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private int tsTotalCount = 0;
     private int tsZeroCount = 0;
     private int tsDownloadedCount = 0;
+    // 当前下载任务中已下载ts个数
+    private int tsCurrentCount = 0;
+    // 当前下载任务中总ts个数
+    private int tsDownloadTotal = 0;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -151,6 +163,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
     @DownloadGroup.onPre void onPre(DownloadGroupTask task) {
         Log.v(TAG, "DownloadGroup prepare");
+        openDownloadProgressBar();
     }
 
     @DownloadGroup.onTaskStart void taskStart(DownloadGroupTask task) {
@@ -163,6 +176,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
     @DownloadGroup.onTaskRunning void running(DownloadGroupTask task) {
         Log.v(TAG, "DownloadGroup running");
+        mSpeed = String.valueOf(task.getSpeed());
     }
 
     @DownloadGroup.onWait void onWait(DownloadGroupTask task){
@@ -180,6 +194,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         setSpannableString(mTvConsole, "DownloadGroup cancel" + "\n", "#4D8ADE");
         mTaskId = -1;
         clearArrayLists();
+        resetDownloadValues();
     }
 
     @DownloadGroup.onTaskFail void taskFail(DownloadGroupTask task) {
@@ -189,14 +204,15 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         setSpannableString(mTvConsole, msg + "\n", "#FF0000");
         mTaskId = -1;
         clearArrayLists();
+        resetDownloadValues();
     }
 
     @DownloadGroup.onTaskComplete void taskComplete(DownloadGroupTask task) {
         String msg = "DownloadGroup complete";
-        Log.v(TAG, "DownloadGroup complete");
-        cancelDownloadGroupTask(mTaskId);
+        Log.v(TAG, msg);
         setSpannableString(mTvConsole, msg + "\n", "#4D8ADE");
         mTaskId = -1;
+        resetDownloadValues();
     }
 
     @DownloadGroup.onSubTaskRunning void onSubTaskRunning(DownloadGroupTask groupTask, DownloadEntity subEntity) {
@@ -220,6 +236,8 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
     @DownloadGroup.onSubTaskComplete void onSubTaskComplete(DownloadGroupTask groupTask, DownloadEntity subEntity) {
         String msg = "[" + subEntity.getFileName() + "] complete";
+        tsCurrentCount += 1;
+        updateDownloadProgressBar();
         Log.d(TAG, msg);
         mTvConsole.append(msg + "\n");
         String srcPath = m3u8Dir + File.separator + "ts" + File.separator + subEntity.getFileName();
@@ -281,10 +299,15 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         mBtnCombine = (Button) findViewById(R.id.btn_combine);
         mBtnCancel = (Button) findViewById(R.id.btn_cancel);
         mBtnDeduplicate = (Button) findViewById(R.id.btn_deduplicate);
+        mProgressLayout = (RelativeLayout) findViewById(R.id.rl_progress);
+        mProgressBar = (DownloadProgressBar) findViewById(R.id.dowload_progress_bar);
+        mTvCount = (TextView) findViewById(R.id.tv_count);
+        mTvSpeed = (TextView) findViewById(R.id.tv_speed);
         mBtnAnalysis.setOnClickListener(this);
         mBtnCombine.setOnClickListener(this);
         mBtnCancel.setOnClickListener(this);
         mBtnDeduplicate.setOnClickListener(this);
+        mProgressLayout.setVisibility(View.INVISIBLE);
     }
 
     private void analysisM3U8() {
@@ -475,6 +498,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         }
         Log.v(TAG, "download urls size: " + downloadUrls.size());
         Log.v(TAG, "download names size: " + downloadNames.size());
+        tsDownloadTotal = downloadUrls.size();
         long taskId = Aria.download(this)
                 .loadGroup(downloadUrls)
                 .setDirPath(tsPath)
@@ -576,6 +600,14 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         }
     }
 
+    private void resetDownloadValues() {
+        tsTotalCount = 0;
+        tsZeroCount = 0;
+        tsDownloadedCount = 0;
+        tsCurrentCount = 0;
+        tsDownloadTotal = 0;
+    }
+
     private void moveFileToZeroDir(String srcPath, String targetPath) {
         File source = new File(srcPath);
         File target = new File(targetPath);
@@ -669,5 +701,21 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
             }
         });
         builder.show();
+    }
+
+    private void openDownloadProgressBar() {
+        Log.v(TAG, "openDownloadProgressBar()");
+        mProgressLayout.setVisibility(View.VISIBLE);
+        updateDownloadProgressBar();
+    }
+
+    private void updateDownloadProgressBar() {
+        // 更新下载进度
+        String s1 = tsCurrentCount + "/" + tsDownloadTotal;
+        String s2 = mSpeed + "B/s";
+        mTvCount.setText(s1);
+        mTvSpeed.setText(s2);
+        mProgressBar.setTotalValue(tsDownloadTotal);
+        mProgressBar.setCurrentValue(tsCurrentCount);
     }
 }
