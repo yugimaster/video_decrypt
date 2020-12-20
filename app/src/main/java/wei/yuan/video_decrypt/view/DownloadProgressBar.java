@@ -74,7 +74,7 @@ public class DownloadProgressBar extends View {
         canvas.drawLine(0, offsetTop, getWidth(), offsetTop, paint);
         // 绘制进度条颜色
         paint.setColor(getResources().getColor(R.color.colorAccent));
-        paint.setStrokeWidth(3);
+        paint.setStrokeWidth(5);
         canvas.drawLine(0, offsetTop, offset, offsetTop, paint);
         // 绘制白色区域及百分比
         paint.setColor(getResources().getColor(R.color.colorWhite));
@@ -84,7 +84,7 @@ public class DownloadProgressBar extends View {
         paintText.setAntiAlias(true);
         paintText.getTextBounds(percentValue, 0, percentValue.length(), boundPer);
         canvas.drawLine(offset, offsetTop, offset + boundPer.width() + 4, offsetTop, paint);
-        canvas.drawText(percentValue, offset, offsetTop + boundPer.height() / 2 + 2, paintText);
+        canvas.drawText(percentValue, offset, offsetTop + boundPer.height() / 2, paintText);
     }
 
     /**
