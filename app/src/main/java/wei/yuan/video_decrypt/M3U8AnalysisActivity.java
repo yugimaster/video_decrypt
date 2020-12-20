@@ -61,6 +61,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private TextView mTvConsole;
     private TextView mTvCount;
     private TextView mTvSpeed;
+    private TextView mTvZero;
     private Button mBtnAnalysis;
     private Button mBtnCombine;
     private Button mBtnCancel;
@@ -83,6 +84,8 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private int tsCurrentCount = 0;
     // 当前下载任务中总ts个数
     private int tsDownloadTotal = 0;
+    // 当前下载任务中ts大小为0个数
+    private int tsDownloadZero = 0;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -212,7 +215,6 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         Log.v(TAG, msg);
         setSpannableString(mTvConsole, msg + "\n", "#4D8ADE");
         mTaskId = -1;
-        resetDownloadValues();
     }
 
     @DownloadGroup.onSubTaskRunning void onSubTaskRunning(DownloadGroupTask groupTask, DownloadEntity subEntity) {
@@ -303,6 +305,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         mProgressBar = (DownloadProgressBar) findViewById(R.id.dowload_progress_bar);
         mTvCount = (TextView) findViewById(R.id.tv_count);
         mTvSpeed = (TextView) findViewById(R.id.tv_speed);
+        mTvZero = (TextView) findViewById(R.id.tv_zero);
         mBtnAnalysis.setOnClickListener(this);
         mBtnCombine.setOnClickListener(this);
         mBtnCancel.setOnClickListener(this);
@@ -621,6 +624,9 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
                         if (flag) {
                             Log.d(TAG, "copy success");
                             source.delete();
+                            // 记录下载的ts为0的个数
+                            tsDownloadZero += 1;
+                            addZeroTsCount();
                         } else {
                             Log.d(TAG, "copy failed");
                         }
@@ -712,10 +718,26 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private void updateDownloadProgressBar() {
         // 更新下载进度
         String s1 = tsCurrentCount + "/" + tsDownloadTotal;
-        String s2 = mSpeed + "B/s";
+        String s2 = CommonUtil.sizeConvertFormat(Long.parseLong(mSpeed)) + "/s";
         mTvCount.setText(s1);
         mTvSpeed.setText(s2);
         mProgressBar.setTotalValue(tsDownloadTotal);
         mProgressBar.setCurrentValue(tsCurrentCount);
+        if ((tsCurrentCount == tsDownloadTotal) && tsCurrentCount > 0) {
+            resetDownloadValues();
+        }
+    }
+
+    /**
+     * 统计大小为0的ts个数
+     */
+    private void addZeroTsCount() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                String s = "0 TS File: " + tsDownloadZero;
+                mTvZero.setText(s);
+            }
+        });
     }
 }

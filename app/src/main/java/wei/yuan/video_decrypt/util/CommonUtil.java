@@ -226,6 +226,38 @@ public class CommonUtil {
         return true;
     }
 
+    /**
+     * 字节数单位B与KB、MB、GB之间的转换
+     * @param size
+     * @return String
+     */
+    public static String sizeConvertFormat(long size) {
+        // 如果字节数少于1024，则直接以B为单位
+        if (size < 1024) {
+            return String.valueOf(size) + "B";
+        } else {
+            size = size / 1024;
+        }
+
+        // 如果原字节数除于1024之后，少于1024，则可以直接以KB作为单位
+        if (size < 1024) {
+            return String.valueOf(size) + "KB";
+        } else {
+            size = size / 1024;
+        }
+
+        if (size < 1024) {
+            // 如果以MB为单位的话，保留最后1位小数
+            // 因此，把此数乘以100之后再取余
+            size = size * 100;
+            return String.valueOf((size / 100)) + "." + String.valueOf((size % 100)) + "MB";
+        } else {
+            // 否则如果要以GB为单位的，先除于1024再作同样的处理
+            size = size * 100 / 1024;
+            return String.valueOf((size / 100)) + "." + String.valueOf((size % 100)) + "GB";
+        }
+    }
+
     private static byte[] toByteArray(FileInputStream fis, long len) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try {
