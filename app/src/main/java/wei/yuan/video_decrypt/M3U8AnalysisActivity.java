@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.Html;
 import android.text.SpannableStringBuilder;
 import android.util.Log;
 import android.view.View;
@@ -32,6 +33,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -56,12 +59,16 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
     private Context mContext;
 
+    private Timer mTimerDownload;
+    private TimerTask mTimerTaskWait;
+
     private File mTargetFile;
 
     private TextView mTvConsole;
     private TextView mTvCount;
     private TextView mTvSpeed;
     private TextView mTvZero;
+    private TextView mTvInfo;
     private Button mBtnAnalysis;
     private Button mBtnCombine;
     private Button mBtnCancel;
@@ -74,6 +81,8 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private String mSpeed = "1";
     private List<String> mTsUrls;
     private List<String> mTsNames;
+    private List<String> mDownloadUrls;
+    private List<String> mDownloadNames;
 
     private long mTaskId = -1;
 
@@ -105,6 +114,8 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         m3u8Dir = DMM_DIR + File.separator + directory;
         mTsUrls = new ArrayList<String>();
         mTsNames = new ArrayList<String>();
+        mDownloadUrls = new ArrayList<String>();
+        mDownloadNames = new ArrayList<String>();
 
         initView();
 
@@ -138,6 +149,9 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
         // 取消注册aria
         Aria.download(this).unRegister();
+
+        clearArrayLists();
+        resetDownloadValues();
     }
 
     @Override
@@ -188,7 +202,6 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
     @DownloadGroup.onTaskStop void taskStop(DownloadGroupTask task) {
         Log.v(TAG, "DownloadGroup stop");
-        clearArrayLists();
     }
 
     @DownloadGroup.onTaskCancel void taskCancel(DownloadGroupTask task) {
@@ -196,8 +209,6 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         cancelDownloadGroupTask(mTaskId);
         setSpannableString(mTvConsole, "DownloadGroup cancel" + "\n", "#4D8ADE");
         mTaskId = -1;
-        clearArrayLists();
-        resetDownloadValues();
     }
 
     @DownloadGroup.onTaskFail void taskFail(DownloadGroupTask task) {
@@ -206,8 +217,6 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         cancelDownloadGroupTask(mTaskId);
         setSpannableString(mTvConsole, msg + "\n", "#FF0000");
         mTaskId = -1;
-        clearArrayLists();
-        resetDownloadValues();
     }
 
     @DownloadGroup.onTaskComplete void taskComplete(DownloadGroupTask task) {
@@ -259,6 +268,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private Runnable analysisM3u8FileRunnable = new Runnable() {
         @Override
         public void run() {
+            clearArrayLists();
             boolean flag = m3u8Loader();
             if (flag) {
                 Log.v(TAG, "m3u8 load success");
@@ -302,15 +312,16 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         mBtnCancel = (Button) findViewById(R.id.btn_cancel);
         mBtnDeduplicate = (Button) findViewById(R.id.btn_deduplicate);
         mProgressLayout = (RelativeLayout) findViewById(R.id.rl_progress);
-        mProgressBar = (DownloadProgressBar) findViewById(R.id.dowload_progress_bar);
+        mProgressBar = (DownloadProgressBar) findViewById(R.id.download_progress_bar);
         mTvCount = (TextView) findViewById(R.id.tv_count);
         mTvSpeed = (TextView) findViewById(R.id.tv_speed);
         mTvZero = (TextView) findViewById(R.id.tv_zero);
+        mTvInfo = (TextView) findViewById(R.id.tv_info);
         mBtnAnalysis.setOnClickListener(this);
         mBtnCombine.setOnClickListener(this);
         mBtnCancel.setOnClickListener(this);
         mBtnDeduplicate.setOnClickListener(this);
-        mProgressLayout.setVisibility(View.INVISIBLE);
+        mProgressLayout.setVisibility(View.GONE);
     }
 
     private void analysisM3U8() {
@@ -471,6 +482,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
                 showToastMsg(mContext, "Mode: " + currentMode);
                 if (i == 0) {
                     mTvConsole.setText("");
+                    resetDownloadValues();
                     tsListDownload();
                 }
             }
@@ -484,28 +496,26 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         if (!tsDir.exists()) {
             tsDir.mkdir();
         }
-        List<String> downloadUrls = new ArrayList<String>();
-        List<String> downloadNames = new ArrayList<String>();
         for (int i = 0; i < mTsNames.size(); i++) {
             String url = mTsUrls.get(i);
             String name = mTsNames.get(i);
             File tsFile = new File(m3u8Dir + File.separator + "ts" + File.separator + name);
             if (!tsFile.exists()) {
-                downloadUrls.add(url);
-                downloadNames.add(name);
+                mDownloadUrls.add(url);
+                mDownloadNames.add(name);
             } else if (tsFile.length() == 0) {
                 tsFile.delete();
-                downloadUrls.add(url);
-                downloadNames.add(name);
+                mDownloadUrls.add(url);
+                mDownloadNames.add(name);
             }
         }
-        Log.v(TAG, "download urls size: " + downloadUrls.size());
-        Log.v(TAG, "download names size: " + downloadNames.size());
-        tsDownloadTotal = downloadUrls.size();
+        Log.v(TAG, "download urls size: " + mDownloadUrls.size());
+        Log.v(TAG, "download names size: " + mDownloadNames.size());
+        tsDownloadTotal = mDownloadUrls.size();
         long taskId = Aria.download(this)
-                .loadGroup(downloadUrls)
+                .loadGroup(mDownloadUrls)
                 .setDirPath(tsPath)
-                .setSubFileName(downloadNames)
+                .setSubFileName(mDownloadNames)
                 .unknownSize()
                 .ignoreTaskOccupy()
                 .create();
@@ -601,6 +611,12 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         if (mTsNames != null && mTsNames.size() > 0) {
             mTsNames.clear();
         }
+        if (mDownloadUrls != null && mDownloadUrls.size() > 0) {
+            mDownloadUrls.clear();
+        }
+        if (mDownloadNames != null && mDownloadNames.size() > 0) {
+            mDownloadNames.clear();
+        }
     }
 
     private void resetDownloadValues() {
@@ -608,6 +624,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         tsZeroCount = 0;
         tsDownloadedCount = 0;
         tsCurrentCount = 0;
+        tsDownloadZero = 0;
         tsDownloadTotal = 0;
     }
 
@@ -626,7 +643,6 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
                             source.delete();
                             // 记录下载的ts为0的个数
                             tsDownloadZero += 1;
-                            addZeroTsCount();
                         } else {
                             Log.d(TAG, "copy failed");
                         }
@@ -712,20 +728,19 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private void openDownloadProgressBar() {
         Log.v(TAG, "openDownloadProgressBar()");
         mProgressLayout.setVisibility(View.VISIBLE);
+        mTvInfo.setText("已下载/0大小/总个数");
         updateDownloadProgressBar();
     }
 
     private void updateDownloadProgressBar() {
         // 更新下载进度
-        String s1 = tsCurrentCount + "/" + tsDownloadTotal;
+        String s1 = String.format("%d/<font color=\"#FF0000\">%d</font>/%d",
+                tsCurrentCount, tsDownloadZero, tsDownloadTotal);
         String s2 = CommonUtil.sizeConvertFormat(Long.parseLong(mSpeed)) + "/s";
-        mTvCount.setText(s1);
+        mTvCount.setText(Html.fromHtml(s1));
         mTvSpeed.setText(s2);
         mProgressBar.setTotalValue(tsDownloadTotal);
         mProgressBar.setCurrentValue(tsCurrentCount);
-        if ((tsCurrentCount == tsDownloadTotal) && tsCurrentCount > 0) {
-            resetDownloadValues();
-        }
     }
 
     /**
@@ -739,5 +754,15 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
                 mTvZero.setText(s);
             }
         });
+    }
+
+    private void startDownloadWaitTimer() {
+        mTimerDownload = new Timer();
+        mTimerTaskWait = new TimerTask() {
+            @Override
+            public void run() {
+
+            }
+        };
     }
 }
