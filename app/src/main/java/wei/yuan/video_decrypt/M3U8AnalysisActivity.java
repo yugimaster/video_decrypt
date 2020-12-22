@@ -69,6 +69,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private TextView mTvSpeed;
     private TextView mTvZero;
     private TextView mTvInfo;
+    private TextView mTvWait;
     private Button mBtnAnalysis;
     private Button mBtnCombine;
     private Button mBtnCancel;
@@ -95,6 +96,8 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private int tsDownloadTotal = 0;
     // 当前下载任务中ts大小为0个数
     private int tsDownloadZero = 0;
+    // 计时器计数
+    private int timerCount = 0;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -152,6 +155,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
         clearArrayLists();
         resetDownloadValues();
+        destroyDownloadWaitTimer();
     }
 
     @Override
@@ -280,6 +284,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
                 public void run() {
                     dismissLoadingDialog();
                     if (flag) {
+                        destroyDownloadWaitTimer();
                         openTsDownloadDialog();
                     }
                 }
@@ -317,6 +322,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         mTvSpeed = (TextView) findViewById(R.id.tv_speed);
         mTvZero = (TextView) findViewById(R.id.tv_zero);
         mTvInfo = (TextView) findViewById(R.id.tv_info);
+        mTvWait = (TextView) findViewById(R.id.tv_wait);
         mBtnAnalysis.setOnClickListener(this);
         mBtnCombine.setOnClickListener(this);
         mBtnCancel.setOnClickListener(this);
@@ -729,6 +735,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         Log.v(TAG, "openDownloadProgressBar()");
         mProgressLayout.setVisibility(View.VISIBLE);
         mTvInfo.setText("已下载/0大小/总个数");
+        startDownloadWaitTimer();
         updateDownloadProgressBar();
     }
 
@@ -761,8 +768,38 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         mTimerTaskWait = new TimerTask() {
             @Override
             public void run() {
-
+                if (tsCurrentCount > 0) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mTvWait.setText("");
+                        }
+                    });
+                    destroyDownloadWaitTimer();
+                } else {
+                    timerCount += 1;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            String s = "waiting " + timerCount + "s";
+                            mTvWait.setText(s);
+                        }
+                    });
+                }
             }
         };
+        mTimerDownload.schedule(mTimerTaskWait, 500, 1000);
+    }
+
+    private void destroyDownloadWaitTimer() {
+        if (mTimerDownload != null) {
+            mTimerDownload.cancel();
+            mTimerDownload = null;
+        }
+        if (mTimerTaskWait != null) {
+            mTimerTaskWait.cancel();
+            mTimerTaskWait = null;
+        }
+        timerCount = 0;
     }
 }
