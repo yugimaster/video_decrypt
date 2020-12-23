@@ -62,6 +62,15 @@
             android:layout_marginStart="10dp"
             android:textColor="@color/colorRed"
             android:textSize="12sp"/>
+        
+        <ImageView
+            android:id="@+id/iv_load"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@id/tv_wait"
+            android:layout_marginTop="6dp"
+            android:layout_marginEnd="2dp"
+            android:src="@drawable/load"/>
 
         <TextView
             android:id="@+id/tv_wait"
@@ -69,7 +78,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:layout_marginEnd="3dp"
-            android:layout_toStartOf="@id/tv_speed"
+            android:layout_alignParentEnd="true"
             android:textColor="@color/colorGrey"
             android:textSize="12sp"/>
 
