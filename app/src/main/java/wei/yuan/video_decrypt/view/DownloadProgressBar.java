@@ -84,7 +84,7 @@ public class DownloadProgressBar extends View {
         paintText.setAntiAlias(true);
         paintText.getTextBounds(percentValue, 0, percentValue.length(), boundPer);
         canvas.drawLine(offset, offsetTop, offset + boundPer.width() + 4, offsetTop, paint);
-        canvas.drawText(percentValue, offset, offsetTop + boundPer.height() / 2, paintText);
+        canvas.drawText(percentValue, offset + 2, offsetTop + boundPer.height() / 2 - 1, paintText);
     }
 
     /**
