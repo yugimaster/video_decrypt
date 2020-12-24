@@ -15,7 +15,9 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -75,12 +77,15 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private TextView mTvWait;
     private Button mBtnAnalysis;
     private Button mBtnCombine;
-    private Button mBtnCancel;
     private Button mBtnDeduplicate;
+    private ImageButton mIbtnStop;
+    private ImageButton mIbtnResume;
+    private ImageButton mIbtnCancel;
     private ImageView mIvLoad;
 
     private RelativeLayout mProgressLayout;
     private DownloadProgressBar mProgressBar;
+    private LinearLayout mImageButtonsLayout;
 
     private String m3u8Dir;
     private String mSpeed = "1";
@@ -102,6 +107,9 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private int tsDownloadZero = 0;
     // 计时器计数
     private int timerCount = 0;
+
+    private boolean isResumeBtnClick = false;
+    private boolean isDownloadGroupComplete = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -172,13 +180,22 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
                 Log.v(TAG, "start combine ts");
                 combineTsFiles();
                 break;
-            case R.id.btn_cancel:
-                Log.v(TAG, "cancel current download group task");
-                cancelDownloadGroupTask(mTaskId);
-                break;
             case R.id.btn_deduplicate:
                 Log.v(TAG, "delete duplicated files");
                 gotoDeduplication();
+                break;
+            case R.id.ib_stop:
+                Log.v(TAG, "stop current download group task");
+                stopDownloadGroupTask(mTaskId);
+                break;
+            case R.id.ib_resume:
+                Log.v(TAG, "resume current download group task");
+                isResumeBtnClick = true;
+                resumeDownloadGroupTask(mTaskId);
+                break;
+            case R.id.ib_cancel:
+                Log.v(TAG, "cancel current download group task");
+                cancelDownloadGroupTask(mTaskId);
                 break;
             default:
                 break;
@@ -196,6 +213,12 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
     @DownloadGroup.onTaskResume void taskResume(DownloadGroupTask task) {
         Log.v(TAG, "DownloadGroup resume");
+        if (isResumeBtnClick) {
+            setSpannableString(mTvConsole, "DownloadGroup resume" + "\n", "#4D8ADE");
+            mIbtnResume.setVisibility(View.GONE);
+            mIbtnStop.setVisibility(View.VISIBLE);
+            isResumeBtnClick = false;
+        }
     }
 
     @DownloadGroup.onTaskRunning void running(DownloadGroupTask task) {
@@ -209,23 +232,30 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
     @DownloadGroup.onTaskStop void taskStop(DownloadGroupTask task) {
         Log.v(TAG, "DownloadGroup stop");
+        setSpannableString(mTvConsole, "DownloadGroup stop" + "\n", "#4D8ADE");
+        mIbtnStop.setVisibility(View.GONE);
+        mIbtnResume.setVisibility(View.VISIBLE);
     }
 
     @DownloadGroup.onTaskCancel void taskCancel(DownloadGroupTask task) {
         Log.v(TAG, "DownloadGroup cancel");
         setSpannableString(mTvConsole, "DownloadGroup cancel" + "\n", "#4D8ADE");
         mTaskId = -1;
+        mProgressLayout.setVisibility(View.GONE);
+        mImageButtonsLayout.setVisibility(View.GONE);
+        mTvInfo.setText("");
+        mTvInfo.setVisibility(View.GONE);
     }
 
     @DownloadGroup.onTaskFail void taskFail(DownloadGroupTask task) {
         String msg = "DownloadGroup fail";
         Log.v(TAG, msg);
-        cancelDownloadGroupTask(mTaskId);
         setSpannableString(mTvConsole, msg + "\n", "#FF0000");
     }
 
     @DownloadGroup.onTaskComplete void taskComplete(DownloadGroupTask task) {
         String msg = "DownloadGroup complete";
+        isDownloadGroupComplete = true;
         Log.v(TAG, msg);
         setSpannableString(mTvConsole, msg + "\n", "#4D8ADE");
         String s = String.format("<font color=\"#4D8ADE\">%s</font>", "Complete");
@@ -255,9 +285,6 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         String msg = "[" + subEntity.getFileName() + "] complete";
         tsCurrentCount += 1;
         updateDownloadProgressBar();
-        if (tsCurrentCount >= tsDownloadTotal) {
-            cancelDownloadGroupTask(mTaskId);
-        }
         Log.d(TAG, msg);
 //        mTvConsole.append(msg + "\n");
         String srcPath = m3u8Dir + File.separator + "ts" + File.separator + subEntity.getFileName();
@@ -319,21 +346,28 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         mTvConsole = (TextView) findViewById(R.id.consoleText);
         mBtnAnalysis = (Button) findViewById(R.id.btn_analysis);
         mBtnCombine = (Button) findViewById(R.id.btn_combine);
-        mBtnCancel = (Button) findViewById(R.id.btn_cancel);
         mBtnDeduplicate = (Button) findViewById(R.id.btn_deduplicate);
         mProgressLayout = (RelativeLayout) findViewById(R.id.rl_progress);
         mProgressBar = (DownloadProgressBar) findViewById(R.id.download_progress_bar);
+        mImageButtonsLayout = (LinearLayout) findViewById(R.id.ll_imagebuttons);
         mTvCount = (TextView) findViewById(R.id.tv_count);
         mTvSpeed = (TextView) findViewById(R.id.tv_speed);
         mTvZero = (TextView) findViewById(R.id.tv_zero);
         mTvInfo = (TextView) findViewById(R.id.tv_info);
         mTvWait = (TextView) findViewById(R.id.tv_wait);
         mIvLoad = (ImageView) findViewById(R.id.iv_load);
+        mIbtnStop = (ImageButton) findViewById(R.id.ib_stop);
+        mIbtnResume = (ImageButton) findViewById(R.id.ib_resume);
+        mIbtnCancel = (ImageButton) findViewById(R.id.ib_cancel);
         mBtnAnalysis.setOnClickListener(this);
         mBtnCombine.setOnClickListener(this);
-        mBtnCancel.setOnClickListener(this);
         mBtnDeduplicate.setOnClickListener(this);
+        mIbtnStop.setOnClickListener(this);
+        mIbtnResume.setOnClickListener(this);
+        mIbtnCancel.setOnClickListener(this);
         mProgressLayout.setVisibility(View.GONE);
+        mImageButtonsLayout.setVisibility(View.GONE);
+        mTvInfo.setVisibility(View.GONE);
     }
 
     private void analysisM3U8() {
@@ -494,6 +528,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
                 showToastMsg(mContext, "Mode: " + currentMode);
                 if (i == 0) {
                     mTvConsole.setText("");
+                    isDownloadGroupComplete = false;
                     resetDownloadValues();
                     tsListDownload();
                 }
@@ -507,13 +542,6 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         File tsDir = new File(tsPath);
         if (!tsDir.exists()) {
             tsDir.mkdir();
-        }
-        long curTaskId = getCurrentDownloadGroupTask(tsPath);
-        if (curTaskId != -1) {
-            Log.d(TAG, "DownloadGroupTask exists");
-            cancelDownloadGroupTask(curTaskId);
-        } else {
-            Log.d(TAG, "DownloadGroupTask not exists");
         }
         for (int i = 0; i < mTsNames.size(); i++) {
             String url = mTsUrls.get(i);
@@ -542,10 +570,32 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         mTaskId = taskId;
     }
 
+
+    private void stopDownloadGroupTask(long taskId) {
+        Log.v(TAG, "DownloadGroup taskId: " + taskId);
+        if (taskId == -1) {
+            setSpannableString(mTvConsole, "DownloadGroup invalid task id!\n",
+                    "#FF0000");
+            return;
+        }
+        Aria.download(this).loadGroup(taskId).stop();
+    }
+
+    private void resumeDownloadGroupTask(long taskId) {
+        Log.v(TAG, "DownloadGroup taskId: " + taskId);
+        if (taskId == -1) {
+            setSpannableString(mTvConsole, "DownloadGroup invalid task id!\n",
+                    "#FF0000");
+            return;
+        }
+        Aria.download(this).loadGroup(taskId).resume();
+    }
+
     private void cancelDownloadGroupTask(long taskId) {
         Log.v(TAG, "DownloadGroup taskId: " + taskId);
         if (taskId == -1) {
-            setSpannableString(mTvConsole, "invalid task id!" + "\n", "#FF0000");
+            setSpannableString(mTvConsole, "DownloadGroup invalid task id!" + "\n",
+                    "#FF0000");
             return;
         }
         Aria.download(this).loadGroup(taskId).cancel();
@@ -751,6 +801,9 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     private void openDownloadProgressBar() {
         Log.v(TAG, "openDownloadProgressBar()");
         mProgressLayout.setVisibility(View.VISIBLE);
+        mImageButtonsLayout.setVisibility(View.VISIBLE);
+        mIbtnStop.setVisibility(View.VISIBLE);
+        mIbtnResume.setVisibility(View.GONE);
         mTvInfo.setText("已下载/0大小/总个数");
         mTvSpeed.setVisibility(View.GONE);
         startDownloadWaitTimer();
@@ -758,6 +811,9 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     }
 
     private void updateDownloadProgressBar() {
+        if (isDownloadGroupComplete) {
+            return;
+        }
         // 更新下载进度
         String s1 = String.format("%d/<font color=\"#FF0000\">%d</font>/%d",
                 tsCurrentCount, tsDownloadZero, tsDownloadTotal);
