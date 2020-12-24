@@ -21,4 +21,6 @@
     <string name="download_resume">继续下载</string>
     <string name="download_restart">重新下载</string>
     <string name="deduplicate">去重</string>
+    <string name="stop">停止</string>
+    <string name="resume">继续</string>
 </resources>
