@@ -251,6 +251,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         String msg = "DownloadGroup fail";
         Log.v(TAG, msg);
         setSpannableString(mTvConsole, msg + "\n", "#FF0000");
+        openDownloadFailInfoDialog();
     }
 
     @DownloadGroup.onTaskComplete void taskComplete(DownloadGroupTask task) {
@@ -524,8 +525,6 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         builder.setItems(modes, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                String currentMode = modes[i];
-                showToastMsg(mContext, "Mode: " + currentMode);
                 if (i == 0) {
                     mTvConsole.setText("");
                     isDownloadGroupComplete = false;
@@ -802,12 +801,32 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         Log.v(TAG, "openDownloadProgressBar()");
         mProgressLayout.setVisibility(View.VISIBLE);
         mImageButtonsLayout.setVisibility(View.VISIBLE);
+        mTvInfo.setVisibility(View.VISIBLE);
         mIbtnStop.setVisibility(View.VISIBLE);
         mIbtnResume.setVisibility(View.GONE);
         mTvInfo.setText("已下载/0大小/总个数");
         mTvSpeed.setVisibility(View.GONE);
         startDownloadWaitTimer();
         updateDownloadProgressBar();
+    }
+
+    private void openDownloadFailInfoDialog() {
+        Log.v(TAG, "openDownloadFailInfoDialog()");
+        AlertDialog.Builder builder = new AlertDialog.Builder(this,
+                R.style.Theme_AppCompat_Light_Dialog);
+        builder.setTitle("下载组任务失败！");
+        final String[] modes = {getString(R.string.ok), getString(R.string.cancel)};
+        builder.setItems(modes, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int i) {
+                if (i == 0) {
+                    long taskId = getCurrentDownloadGroupTask(
+                            m3u8Dir + File.separator + "ts");
+                    cancelDownloadGroupTask(taskId);
+                }
+            }
+        });
+        builder.show();
     }
 
     private void updateDownloadProgressBar() {
