@@ -110,6 +110,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
     private boolean isResumeBtnClick = false;
     private boolean isDownloadGroupComplete = false;
+    private boolean isDialogFailShowing = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -250,6 +251,9 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
     @DownloadGroup.onTaskFail void taskFail(DownloadGroupTask task) {
         String msg = "DownloadGroup fail";
         Log.v(TAG, msg);
+        if (isDialogFailShowing) {
+            return;
+        }
         setSpannableString(mTvConsole, msg + "\n", "#FF0000");
         openDownloadFailInfoDialog();
     }
@@ -812,6 +816,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
     private void openDownloadFailInfoDialog() {
         Log.v(TAG, "openDownloadFailInfoDialog()");
+        isDialogFailShowing = true;
         AlertDialog.Builder builder = new AlertDialog.Builder(this,
                 R.style.Theme_AppCompat_Light_Dialog);
         builder.setTitle("下载组任务失败！");
@@ -819,6 +824,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
         builder.setItems(modes, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int i) {
+                isDialogFailShowing = false;
                 if (i == 0) {
                     long taskId = getCurrentDownloadGroupTask(
                             m3u8Dir + File.separator + "ts");
