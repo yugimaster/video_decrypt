@@ -292,7 +292,7 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         String curFileName = "";
         for (int i = 0; i <= Integer.valueOf(offset); i++) {
             int index = Integer.valueOf(firstIndex) + i;
-            curFileName = firstFileName.replace(firstIndex + ".ts", String.valueOf(index) + ".ts");
+            curFileName = getIndexFileName(firstFileName, Integer.valueOf(firstIndex), index);
             curUrl = url.replace(firstFileName, curFileName);
             Log.d(TAG, "index " + index + " url: " + curUrl);
             urls.add(curUrl);
@@ -321,8 +321,15 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         try {
             String[] strs = fileName.split("\\.");
             String name = strs[0];
-            String[] s = name.split("_");
-            String index = s[2];
+            String[] s = null;
+            String index = "";
+            if (name.contains("_")) {
+                s = name.split("_");
+                index = s[2];
+            } else if (name.contains("-")) {
+                s = name.split("-");
+                index = s[1];
+            }
             return index;
         } catch (Exception e) {
             Log.e(TAG, e.toString());
@@ -357,5 +364,18 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         }
 
         return flag;
+    }
+
+    private String getIndexFileName(String originName, int originIndex, int index) {
+        String indexFileName = "";
+        if (originName.startsWith("seg")) {
+            indexFileName = originName.replace("-" + originIndex + "-",
+                    "-" + index + "-");
+        } else {
+            indexFileName = originName.replace(originIndex + ".ts",
+                    index + ".ts");
+        }
+
+        return indexFileName;
     }
 }
