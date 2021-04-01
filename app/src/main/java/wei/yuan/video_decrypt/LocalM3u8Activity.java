@@ -354,7 +354,6 @@ public class LocalM3u8Activity extends Activity implements View.OnClickListener 
             } else {
                 Log.d(TAG, "error " + keyFile.getName() + ", delete it...");
                 showToastMsg(mContext, "error " + keyFile.getName());
-                keyFile.delete();
             }
         }
         File keyOriginFile = new File(videoPath + File.separator + "key_o.key");
