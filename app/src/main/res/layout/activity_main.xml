@@ -120,6 +120,24 @@
             android:text="@string/analysis_m3u8"
             android:textColor="@color/colorBlack"
             style="?android:buttonBarButtonStyle"/>
+
+        <Button
+            android:id="@+id/btn8"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/exo_player_default"
+            android:textColor="@color/colorBlack"
+            style="?android:buttonBarButtonStyle"/>
+
+        <Button
+            android:id="@+id/btn9"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/exo_player_simple_custom"
+            android:textColor="@color/colorBlack"
+            style="?android:buttonBarButtonStyle"/>
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

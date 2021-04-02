@@ -47,6 +47,14 @@
             android:name=".M3U8AnalysisActivity"
             android:screenOrientation="portrait">
         </activity>
+
+        <activity android:name=".exoplayer.DefaultViewActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize">
+        </activity>
+
+        <activity android:name=".exoplayer.SimpleCustomViewActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize">
+        </activity>
     </application>
 
 </manifest>
