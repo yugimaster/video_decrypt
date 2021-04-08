@@ -29,6 +29,7 @@ import java.util.List;
 
 import androidx.appcompat.app.AppCompatActivity;
 import wei.yuan.video_decrypt.exoplayer.DefaultViewActivity;
+import wei.yuan.video_decrypt.exoplayer.SeniorCustomViewActivity;
 import wei.yuan.video_decrypt.exoplayer.SimpleCustomViewActivity;
 import wei.yuan.video_decrypt.m3u8server.M3u8Server;
 import wei.yuan.video_decrypt.util.AESUtil;
@@ -51,6 +52,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button mBtnAnalysis;
     private Button mBtnExoDefault;
     private Button mBtnExoSimple;
+    private Button mBtnExoSenior;
 
     private BroadcastReceiver mOtgReceiver;
 
@@ -83,6 +85,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mBtnExoDefault.setOnClickListener(this);
         mBtnExoSimple = (Button) findViewById(R.id.btn9);
         mBtnExoSimple.setOnClickListener(this);
+        mBtnExoSenior = (Button) findViewById(R.id.btn10);
+        mBtnExoSenior.setOnClickListener(this);
     }
 
     @Override
@@ -138,6 +142,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btn9:
                 Log.v(TAG, "exo player simple custom activity");
                 startActivity(SimpleCustomViewActivity.class.getName(), path);
+                break;
+            case R.id.btn10:
+                Log.v(TAG, "exo player senior custom activity");
+                startActivity(SeniorCustomViewActivity.class.getName(), path);
                 break;
             default:
                 break;

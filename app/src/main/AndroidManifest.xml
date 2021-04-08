@@ -55,6 +55,10 @@
         <activity android:name=".exoplayer.SimpleCustomViewActivity"
             android:configChanges="keyboardHidden|orientation|screenSize">
         </activity>
+
+        <activity android:name=".exoplayer.SeniorCustomViewActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize">
+        </activity>
     </application>
 
 </manifest>
