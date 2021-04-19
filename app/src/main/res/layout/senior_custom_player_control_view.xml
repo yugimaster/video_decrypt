@@ -39,36 +39,7 @@
             android:text="1/3"
             tool:text="1/3"/>
 
-        <ImageView
-            android:id="@+id/iv_broadcast"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_toStartOf="@id/tvCount"
-            android:layout_marginEnd="20dp"
-            android:layout_centerVertical="true"
-            android:src="@mipmap/ic_fullscreen"/>
-
     </RelativeLayout>
-
-    <ImageView
-        android:id="@+id/exo_play"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@mipmap/ic_play"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
-
-    <ImageView
-        android:id="@+id/exo_pause"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@mipmap/ic_pause"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/gl_center"
@@ -77,62 +48,105 @@
         android:orientation="vertical"
         app:layout_constraintGuide_percent="0.5"/>
 
-    <ImageView
-        android:id="@+id/exo_rew"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="80dp"
-        android:src="@mipmap/ic_preview"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintRight_toLeftOf="@id/gl_center"/>
-
-    <ImageView
-        android:id="@+id/exo_ffwd"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="80dp"
-        android:src="@mipmap/ic_next"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toRightOf="@id/gl_center"/>
-
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="60dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:paddingLeft="20dp"
-        android:paddingRight="20dp"
-        android:gravity="center_vertical"
         android:background="@drawable/video_controller_bottom_bg">
 
-        <TextView
-            android:id="@+id/exo_position"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
-            android:textColor="@android:color/white"
-            tool:text="2:30"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:gravity="center_vertical"
+            android:paddingLeft="20dp"
+            android:paddingRight="20dp">
 
-        <wei.yuan.video_decrypt.exoplayer.custom.MyTimeBar
-            android:id="@+id/exo_progress"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            app:bar_height="6dp"
-            app:buffered_color="@android:color/darker_gray"
-            app:played_color="#FFF100"
-            app:unplayed_color="#33000000"/>
+            <TextView
+                android:id="@+id/exo_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="10dp"
+                android:textColor="@android:color/white"
+                tool:text="2:30" />
 
-        <TextView
-            android:id="@+id/exo_duration"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:textColor="@android:color/white"
-            tool:text="10:00"/>
+            <wei.yuan.video_decrypt.exoplayer.custom.MyTimeBar
+                android:id="@+id/exo_progress"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:bar_height="6dp"
+                app:buffered_color="@android:color/darker_gray"
+                app:played_color="#FFF100"
+                app:unplayed_color="#33000000" />
+
+            <TextView
+                android:id="@+id/exo_duration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:textColor="@android:color/white"
+                tool:text="10:00" />
+
+        </LinearLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:paddingBottom="10dp"
+            android:gravity="center_vertical">
+
+            <View
+                android:id="@+id/ancher"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_centerInParent="true"/>
+
+            <ImageView
+                android:id="@+id/exo_play"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:src="@mipmap/ic_play"/>
+
+            <ImageView
+                android:id="@+id/exo_pause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:src="@mipmap/ic_pause"/>
+
+            <ImageView
+                android:id="@+id/exo_rew"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignEnd="@+id/ancher"
+                android:layout_marginEnd="80dp"
+                android:layout_centerVertical="true"
+                android:src="@mipmap/ic_preview"/>
+
+            <ImageView
+                android:id="@+id/exo_ffwd"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignStart="@id/ancher"
+                android:layout_marginStart="80dp"
+                android:layout_centerVertical="true"
+                android:src="@mipmap/ic_next"/>
+
+            <ImageView
+                android:id="@+id/iv_broadcast"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="20dp"
+                android:layout_centerVertical="true"
+                android:layout_alignParentEnd="true"
+                android:src="@mipmap/ic_fullscreen"/>
+
+        </RelativeLayout>
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
