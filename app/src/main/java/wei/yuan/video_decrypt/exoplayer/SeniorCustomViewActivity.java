@@ -2,11 +2,15 @@ package wei.yuan.video_decrypt.exoplayer;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
 
@@ -35,7 +39,8 @@ import wei.yuan.video_decrypt.util.CommonUtil;
 import wei.yuan.video_decrypt.util.ParseSystemUtil;
 
 public class SeniorCustomViewActivity extends AppCompatActivity implements
-        SimpleExoPlayer.EventListener, MyPlayerControlView.CustomEventListener {
+        SimpleExoPlayer.EventListener, MyPlayerControlView.CustomEventListener,
+        MyPlayerControlView.CustomOrientationListener {
 
     private static final String TAG = "SeniorViewActivity";
     private static final String DEFAULT_URL = "https://cdn.singsingenglish.com/new-sing/66c3d05eaa177e07d57465f948f0d8b934b7a7ba.mp4";
@@ -101,14 +106,40 @@ public class SeniorCustomViewActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onBackClick() {
+    public void onBackClick(boolean isPortrait) {
         Log.i(TAG, "MyPlayerView onBackClick()");
-        this.finish();
+        if (isPortrait) {
+            this.finish();
+        } else {
+            showSystemStatusUI();
+        }
     }
 
     @Override
     public void onBroadCastClick() {
         Log.i(TAG, "MyPlayerView onBroadCastClick()");
+    }
+
+    @Override
+    public void onFillClick(boolean isPortrait) {
+        Log.i(TAG, "MyPlayerView onFillClick()");
+        if (isPortrait) {
+            showSystemStatusUI();
+        } else {
+            hideSystemStatusUI();
+        }
+    }
+
+    @Override
+    public void onOrientationChanged(int orientation) {
+        Log.i(TAG, "MyPlayerControlView onOrientationChanged()");
+        if (orientation == OnOrientationChangedListener.SENSOR_PORTRAIT) {
+            Log.v(TAG, "change to portrait");
+            changeToPortrait();
+        } else if (orientation == OnOrientationChangedListener.SENSOR_LANDSCAPE) {
+            Log.v(TAG, "change to landscape");
+            changeToLandscape();
+        }
     }
 
     private void initView() {
@@ -132,6 +163,7 @@ public class SeniorCustomViewActivity extends AppCompatActivity implements
     private void initEvent() {
         mPlayer.addListener(this);
         mVideoView.controller.setCustomEventListener(this);
+        mVideoView.controller.setCustomOrientationListener(this);
     }
 
     private MediaSource buildMediaSource(Uri uri) {
@@ -234,5 +266,49 @@ public class SeniorCustomViewActivity extends AppCompatActivity implements
             e.printStackTrace();
             return "";
         }
+    }
+
+    /**
+     * Show system status UI when portrait
+     */
+    private void showSystemStatusUI() {
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+    }
+
+    /**
+     * Hide system status UI when landscape
+     */
+    private void hideSystemStatusUI() {
+        WindowManager wm = (WindowManager) getApplicationContext()
+                .getSystemService(Context.WINDOW_SERVICE);
+        if (wm == null) {
+            Log.v(TAG, "window manager is null!");
+            return;
+        }
+
+        int flag = View.SYSTEM_UI_FLAG_LOW_PROFILE
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+        getWindow().getDecorView().setSystemUiVisibility(flag);
+    }
+
+    private void changeToPortrait() {
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
+        WindowManager.LayoutParams params = getWindow().getAttributes();
+        Window window = getWindow();
+        window.setAttributes(params);
+        window.clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+    }
+
+    private void changeToLandscape() {
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+        WindowManager.LayoutParams params = getWindow().getAttributes();
+        Window window = getWindow();
+        window.setAttributes(params);
+        // hide system status with original layout
+        window.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
     }
 }

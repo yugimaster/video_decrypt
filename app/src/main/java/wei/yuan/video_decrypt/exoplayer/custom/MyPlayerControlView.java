@@ -33,9 +33,12 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 
 import wei.yuan.video_decrypt.R;
+import wei.yuan.video_decrypt.exoplayer.OnOrientationChangedListener;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayerLibraryInfo;
 import com.google.android.exoplayer2.PlaybackPreparer;
@@ -267,7 +270,7 @@ public class MyPlayerControlView extends FrameLayout {
     private final ImageView shuffleButton;
     // 自定义
     private final ImageView ivBack;
-    private final ImageView ivBroadcast;
+    private final ImageView ivFill; // 全屏按钮
 
     private final View vrButton;
     private final TextView durationView;
@@ -322,6 +325,9 @@ public class MyPlayerControlView extends FrameLayout {
     private long currentWindowOffset;
 
     private CustomEventListener mCustomEventListener;
+    private CustomOrientationListener customOrientationListener;
+
+    private boolean portrait = true;
 
     public MyPlayerControlView(Context context) {
         this(context, /* attrs= */ null);
@@ -428,9 +434,9 @@ public class MyPlayerControlView extends FrameLayout {
         if (ivBack != null) {
             ivBack.setOnClickListener(componentListener);
         }
-        ivBroadcast = findViewById(R.id.iv_broadcast);
-        if (ivBroadcast != null) {
-            ivBroadcast.setOnClickListener(componentListener);
+        ivFill = findViewById(R.id.iv_fill);
+        if (ivFill != null) {
+            ivFill.setOnClickListener(componentListener);
         }
         nextButton = findViewById(R.id.exo_next);
         if (nextButton != null) {
@@ -1330,12 +1336,20 @@ public class MyPlayerControlView extends FrameLayout {
             } else if (shuffleButton == view) {
                 controlDispatcher.dispatchSetShuffleModeEnabled(player, !player.getShuffleModeEnabled());
             } else if (ivBack == view) {
-                if(mCustomEventListener!=null){
-                    mCustomEventListener.onBackClick();
+                if (mCustomEventListener!=null) {
+                    mCustomEventListener.onBackClick(portrait);
                 }
-            }else if(ivBroadcast == view){
-                if(mCustomEventListener!=null){
-                    mCustomEventListener.onBroadCastClick();
+                if (!portrait) {// change orientation to portrait when click back button
+                    changeOrientation(OnOrientationChangedListener.SENSOR_PORTRAIT);
+                }
+            } else if (ivFill == view) {
+                if (portrait) {
+                    changeOrientation(OnOrientationChangedListener.SENSOR_LANDSCAPE);
+                } else {
+                    changeOrientation(OnOrientationChangedListener.SENSOR_PORTRAIT);
+                }
+                if (mCustomEventListener != null) {
+                    mCustomEventListener.onFillClick(portrait);
                 }
             }
         }
@@ -1345,9 +1359,60 @@ public class MyPlayerControlView extends FrameLayout {
         this.mCustomEventListener = mCustomEventListener;
     }
 
+    public void setCustomOrientationListener(CustomOrientationListener customOrientationListener) {
+        this.customOrientationListener = customOrientationListener;
+    }
+
     public interface CustomEventListener{
-        void onBackClick();
+        void onBackClick(boolean isPortrait);
 
         void onBroadCastClick();
+        void onFillClick(boolean isPortrait);
+    }
+
+    public interface CustomOrientationListener {
+        void onOrientationChanged(int orientation);
+    }
+
+    private synchronized void changeOrientation(
+            @OnOrientationChangedListener.SensorOrientationType int orientation) {
+        if (customOrientationListener == null) {
+            return;
+        }
+        // call back
+        customOrientationListener.onOrientationChanged(orientation);
+
+        switch (orientation) {
+            case OnOrientationChangedListener.SENSOR_PORTRAIT:
+                // portrait
+                setPortrait(true);
+                showControllerByDisplayMode();
+                break;
+            case OnOrientationChangedListener.SENSOR_LANDSCAPE:
+                // landscape
+                setPortrait(false);
+                showControllerByDisplayMode();
+                break;
+            case OnOrientationChangedListener.SENSOR_UNKNOWN:
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void setPortrait(boolean portrait) {
+        this.portrait = portrait;
+        showControllerByDisplayMode();
+    }
+
+    /**
+     * set controller display layout by mode
+     */
+    private void showControllerByDisplayMode() {
+        if (portrait) {
+            ivFill.setImageDrawable(getResources().getDrawable(R.mipmap.ic_fullscreen));
+        } else {
+            ivFill.setImageDrawable(getResources().getDrawable(R.mipmap.ic_window));
+        }
     }
 }
