@@ -14,6 +14,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
 
+import com.danikula.videocache.HttpProxyCacheServer;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -22,6 +23,7 @@ import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 
@@ -32,6 +34,7 @@ import java.io.InputStreamReader;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import wei.yuan.video_decrypt.R;
+import wei.yuan.video_decrypt.cache.HttpProxyCacheUtil;
 import wei.yuan.video_decrypt.exoplayer.custom.MyPlayerControlView;
 import wei.yuan.video_decrypt.exoplayer.custom.MyPlayerView;
 import wei.yuan.video_decrypt.m3u8server.M3u8Server;
@@ -44,6 +47,7 @@ public class SeniorCustomViewActivity extends AppCompatActivity implements
 
     private static final String TAG = "SeniorViewActivity";
     private static final String DEFAULT_URL = "https://cdn.singsingenglish.com/new-sing/66c3d05eaa177e07d57465f948f0d8b934b7a7ba.mp4";
+//    private static final String DEFAULT_URL = "http://wxsnsdy.tc.qq.com/105/20210/snsdyvideodownload?filekey=30280201010421301f0201690402534804102ca905ce620b1241b726bc41dcff44e00204012882540400&bizid=1023&hy=SH&fileparam=302c020101042530230204136ffd93020457e3c4ff02024ef202031e8d7f02030f42400204045a320a0201000400%20%E2%80%94%E2%80%94%E2%80%94%E2%80%94%E2%80%94%E2%80%94%E2%80%94%E2%80%94%E2%80%94%E2%80%94%E2%80%94%E2%80%94%E2%80%94%E2%80%94%E2%80%94%E2%80%94%20%E7%89%88%E6%9D%83%E5%A3%B0%E6%98%8E%EF%BC%9A%E6%9C%AC%E6%96%87%E4%B8%BACSDN%E5%8D%9A%E4%B8%BB%E3%80%8C%E7%A7%A6%E5%B7%9D%E5%B0%8F%E5%B0%86%E3%80%8D%E7%9A%84%E5%8E%9F%E5%88%9B%E6%96%87%E7%AB%A0%EF%BC%8C%E9%81%B5%E5%BE%AACC%204.0%20BY-SA%E7%89%88%E6%9D%83%E5%8D%8F%E8%AE%AE%EF%BC%8C%E8%BD%AC%E8%BD%BD%E8%AF%B7%E9%99%84%E4%B8%8A%E5%8E%9F%E6%96%87%E5%87%BA%E5%A4%84%E9%93%BE%E6%8E%A5%E5%8F%8A%E6%9C%AC%E5%A3%B0%E6%98%8E%E3%80%82%20%E5%8E%9F%E6%96%87%E9%93%BE%E6%8E%A5%EF%BC%9Ahttps://blog.csdn.net/mjb00000/article/details/107720249";
     private static final String SDCARD_DIR = Environment.getExternalStorageDirectory().getPath();
     private static final String DMM_DIR = SDCARD_DIR + File.separator + "dmm";
 
@@ -156,7 +160,15 @@ public class SeniorCustomViewActivity extends AppCompatActivity implements
             playUrl = String.format("http://127.0.0.1:%d%s", M3u8Server.PORT, url);
         }
         Uri uri = Uri.parse(playUrl);
-        MediaSource mediaSource = buildMediaSource(uri);
+        int type = Util.inferContentType(uri.getLastPathSegment());
+        MediaSource mediaSource = null;
+        if (type == C.TYPE_HLS || type == C.TYPE_DASH || type == C.TYPE_SS) {
+            mediaSource = buildMediaSource(uri);
+        } else {
+            String cacheUrl = getAndroidVideoCacheUrl(playUrl);
+            uri = Uri.parse(cacheUrl);
+            mediaSource = buildVideoFileMediaSource(uri);
+        }
         mPlayer.prepare(mediaSource);
     }
 
@@ -190,6 +202,23 @@ public class SeniorCustomViewActivity extends AppCompatActivity implements
             default:
                 return null;
         }
+    }
+
+    /**
+     * Use AndroidVideoCache library for exoplayer cache
+     * Not support for DASH, SS and HLS
+     * @param uri
+     * @return
+     */
+    private MediaSource buildVideoFileMediaSource(Uri uri) {
+        String userAgent = "user-agent";
+        // 构建一个默认的Http数据资源处理工厂
+        DefaultHttpDataSourceFactory httpDataSourceFactory = new DefaultHttpDataSourceFactory(userAgent);
+        // DefaultDataSourceFactory决定数据加载模式，是从网络加载还是本地缓存加载
+        DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(mContext, httpDataSourceFactory);
+        // AndroidVideoCache库不支持DASH, SS(Smooth Streaming：平滑流媒体，如直播流), HLS数据格式
+        // 所以这里使用一个常见媒体转换数据资源工厂
+        return new ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(uri);
     }
 
     private String createVideoPlayUrl() {
@@ -310,5 +339,11 @@ public class SeniorCustomViewActivity extends AppCompatActivity implements
         window.setAttributes(params);
         // hide system status with original layout
         window.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+    }
+
+    private String getAndroidVideoCacheUrl(String url) {
+        HttpProxyCacheServer httpProxyCacheServer = HttpProxyCacheUtil.getVideoProxy();
+        // 将url传入，AndroidVideoCache判断是否使用缓存文件
+        return httpProxyCacheServer.getProxyUrl(url);
     }
 }
