@@ -26,8 +26,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import androidx.appcompat.app.AppCompatActivity;
+import wei.yuan.video_decrypt.activity.BaseActivity;
 import wei.yuan.video_decrypt.exoplayer.DefaultViewActivity;
 import wei.yuan.video_decrypt.exoplayer.SeniorCustomViewActivity;
 import wei.yuan.video_decrypt.exoplayer.SimpleCustomViewActivity;
@@ -35,10 +40,16 @@ import wei.yuan.video_decrypt.m3u8server.M3u8Server;
 import wei.yuan.video_decrypt.util.AESUtil;
 import wei.yuan.video_decrypt.util.CommonUtil;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     private static final String TAG = "MainActivity";
     private static final String EXTERNAL_STORAGE = "/mnt/sdcard/dmm";
+
+    /**
+     * 线程池
+     */
+    private static final Executor threadExecutor = new ThreadPoolExecutor(2, 4, 30,
+            TimeUnit.SECONDS, new LinkedBlockingDeque<Runnable>(10));
 
     private EditText mEt;
     private ScrollView mScrollView;
@@ -55,6 +66,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button mBtnExoSenior;
 
     private BroadcastReceiver mOtgReceiver;
+    private File mSrcDir;
 
     private String[] usbList = null;
 
@@ -152,6 +164,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    private Runnable decryptTsFilesRunnable = new Runnable() {
+        @Override
+        public void run() {
+            decryptTsToTemp(mSrcDir);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    dismissLoadingDialog();
+                }
+            });
+        }
+    };
+
     private void startActivity(String className, String path) {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         Bundle bundle = new Bundle();
@@ -206,29 +231,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void decryptSingleTs(File tsFile, String keyHex, String ivHex, String fileName, File srcDir) {
-        showDebugLog(mTvConsole, "decryptSingleTs()");
+        showDebugLogOnUIThread("decryptSingleTs()");
         byte[] data = CommonUtil.readBinaryFile(tsFile);
         if (data == null) {
-            showDebugLog(mTvConsole, tsFile.getAbsolutePath() + " is null");
+            showDebugLogOnUIThread(tsFile.getAbsolutePath() + " is null");
             return;
         }
         byte[] newData = AESUtil.decrypt(data, keyHex, ivHex);
         if (newData == null) {
-            showDebugLog(mTvConsole, "ts file is invalid");
+            showDebugLogOnUIThread("ts file is invalid");
             return;
         }
         String name = fileName.replace(".ts", "");
         File tempDir = new File(srcDir, "temp");
         if (!tempDir.exists()) {
-            showDebugLog(mTvConsole, "make temp directory");
+            showDebugLogOnUIThread("make temp directory");
             tempDir.mkdirs();
         }
         File tempFile = new File(tempDir, name + "_temp.ts");
         boolean isSaved = CommonUtil.writeBinaryFile(newData, tempFile, mTvConsole);
         if (isSaved) {
-            showDebugLog(mTvConsole, "ts file decrypts success");
+            showDebugLogOnUIThread("ts file decrypts success");
         } else {
-            showDebugLog(mTvConsole, "ts file decrypts failed");
+            showDebugLogOnUIThread("ts file decrypts failed");
         }
     }
 
@@ -308,22 +333,56 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             fileInputStream.close();
             return new String(input);
         } catch (Exception e) {
-            showDebugLog(mTvConsole, e.toString());
+            showDebugLogOnUIThread(e.toString());
             return "";
         }
     }
 
     private String getIvHex(String fileName) {
         Log.d(TAG, "file name: " + fileName);
-        showDebugLog(mTvConsole, "file name: " + fileName);
+        showDebugLogOnUIThread("file name: " + fileName);
         String tsIndex = getTsIndex(fileName);
-        showDebugLog(mTvConsole, "ts index: " + tsIndex);
+        showDebugLogOnUIThread("ts index: " + tsIndex);
         int index = Integer.valueOf(tsIndex);
         return String.format("%032x", index);
     }
 
+    private void decryptTsToTemp(File srcDir) {
+        File keyFile = new File(srcDir, "key_o.key");
+        if (keyFile.exists()) {
+            showDebugLogOnUIThread(keyFile.getAbsolutePath() + " exists");
+            try {
+                String keyHexStr = getKeyHex(keyFile);
+                showDebugLogOnUIThread("key hex str: " + keyHexStr);
+                File tsDir = new File(srcDir, "ts");
+                if (!tsDir.exists()) {
+                    showDebugLogOnUIThread("ts directory doesn't exist!");
+                    return;
+                }
+                File[] files = tsDir.listFiles();
+                if (files.length > 0) {
+                    for (int i = 0; i < files.length; i++) {
+                        File f = files[i];
+                        String name = f.getName();
+                        String ivHexStr = getIvHex(name);
+                        showDebugLogOnUIThread("iv hex str: " + ivHexStr);
+                        decryptSingleTs(f, keyHexStr, ivHexStr, name, srcDir);
+                    }
+                } else {
+                    showDebugLogOnUIThread("ts directory is empty!");
+                }
+            } catch (Exception e) {
+                showDebugLogOnUIThread(e.toString());
+            }
+        } else {
+            showDebugLogOnUIThread(keyFile.getAbsolutePath() + " doesn't exist");
+        }
+
+        debugLogAppendOnUIThread("Decrypt ts finished\n", "#4D8ADE");
+    }
+
     private void showExternalStorageFiles(File srcDir) {
-        File keyFile = new File(srcDir, "key.key");
+        File keyFile = new File(srcDir, "key_o.key");
         if (keyFile.exists()) {
             showDebugLog(mTvConsole, keyFile.getAbsolutePath() + " exists");
             try {
@@ -366,31 +425,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 return name;
             }
             String[] s = name.split("_");
-            String index = s[2];
+            String index = s[s.length - 1];
             return index;
         } catch (Exception e) {
-            showDebugLog(mTvConsole, "getTsIndex()" + "\n" + e.toString());
+            showDebugLogOnUIThread("getTsIndex()" + "\n" + e.toString());
             return "";
         }
     }
 
     private void decryptTsFiles() {
         Log.v(TAG, "decryptTsFiles()");
+        showLoadingDialog();
         File storage = new File(EXTERNAL_STORAGE);
         if (!storage.exists() || !storage.isDirectory()) {
             Log.v(TAG, "storage invalid!");
+            dismissLoadingDialog();
             return;
         }
         String path = mEt.getText().toString().replace("\n", "");
         if (path.isEmpty()) {
+            dismissLoadingDialog();
             Toast.makeText(getApplicationContext(), "请输入文件目录！", Toast.LENGTH_LONG).show();
             return;
         }
         File srcDir = new File(storage, path);
+        mSrcDir = srcDir;
         mTvConsole.setText("");
         if (srcDir.exists() && srcDir.isDirectory()) {
-            showExternalStorageFiles(srcDir);
+            threadExecutor.execute(decryptTsFilesRunnable);
         } else {
+            dismissLoadingDialog();
             showDebugLog(mTvConsole, srcDir.getAbsolutePath() + " doesn't exist");
         }
     }
@@ -418,5 +482,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Uri uri = Uri.parse(localUrl);
         intent.setDataAndType(uri, type);
         startActivity(intent);
+    }
+
+    private void showDebugLogOnUIThread(String msg) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showDebugLog(mTvConsole, msg);
+            }
+        });
+    }
+
+    private void debugLogAppendOnUIThread(String msg, String colorString) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                SpannableStringBuilder builder = CommonUtil.setSpannableString(msg, colorString);
+                mTvConsole.append(builder);
+            }
+        });
     }
 }
