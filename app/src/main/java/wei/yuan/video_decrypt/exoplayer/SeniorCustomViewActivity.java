@@ -1,6 +1,8 @@
 package wei.yuan.video_decrypt.exoplayer;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
@@ -56,6 +58,8 @@ public class SeniorCustomViewActivity extends AppCompatActivity implements
     private MyPlayerView mVideoView;
 
     private String m3u8Dir = "";
+    private String fileDir;
+    private String httpServer;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -69,11 +73,7 @@ public class SeniorCustomViewActivity extends AppCompatActivity implements
         Bundle bundle = intent.getBundleExtra("Info");
         String dir = bundle.getString("directory");
         m3u8Dir = DMM_DIR + File.separator + dir;
-        // 开启本地代理
-        M3u8Server.execute();
-
-        initView();
-        initEvent();
+        chooseHttpServer(dir);
     }
 
     @Override
@@ -151,14 +151,8 @@ public class SeniorCustomViewActivity extends AppCompatActivity implements
         mPlayer.setPlayWhenReady(true);
         mVideoView = (MyPlayerView) findViewById(R.id.video_view);
         mVideoView.setPlayer(mPlayer);
-        String url = createVideoPlayUrl();
-        String playUrl = "";
-        if (url.isEmpty()) {
-            playUrl = DEFAULT_URL;
-        } else {
-            keyConvert(m3u8Dir);
-            playUrl = String.format("http://127.0.0.1:%d%s", M3u8Server.PORT, url);
-        }
+        String playUrl = fileDir + File.separator + "playlist.m3u8";
+        Log.d(TAG, "play url: " + playUrl);
         Uri uri = Uri.parse(playUrl);
         int type = Util.inferContentType(uri.getLastPathSegment());
         MediaSource mediaSource = null;
@@ -345,5 +339,30 @@ public class SeniorCustomViewActivity extends AppCompatActivity implements
         HttpProxyCacheServer httpProxyCacheServer = HttpProxyCacheUtil.getVideoProxy();
         // 将url传入，AndroidVideoCache判断是否使用缓存文件
         return httpProxyCacheServer.getProxyUrl(url);
+    }
+
+    private void chooseHttpServer(String dir) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this,
+                R.style.Theme_AppCompat_Light_Dialog);
+        builder.setTitle("选择服务器");
+        final String[] servers = {"阿里云", "Vultr"};
+        builder.setItems(servers, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String currentServer = servers[which];
+                showToastMsg(mContext, "HttpServer: " + currentServer);
+                if (which == 0) {
+                    httpServer = "http://47.100.53.117:6868/dmm";
+                } else if (which == 1) {
+                    httpServer = "http://45.76.219.190:6868/media/dmm";
+                } else {
+                    httpServer = "";
+                }
+                fileDir = httpServer + File.separator + dir;
+                initView();
+                initEvent();
+            }
+        });
+        builder.show();
     }
 }
