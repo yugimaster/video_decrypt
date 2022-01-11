@@ -35,7 +35,7 @@ import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
-import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
+import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
@@ -71,7 +71,7 @@ public class LocalM3u8Activity extends Activity implements View.OnClickListener 
             "android.permission.WRITE_EXTERNAL_STORAGE"};
 
     private SimpleExoPlayer mSimpleExoPlayer;
-    private SimpleExoPlayerView mExoPlayerView;
+    private PlayerView mExoPlayerView;
 
     private Context mContext;
     private MyHandler mHandler;
@@ -216,15 +216,14 @@ public class LocalM3u8Activity extends Activity implements View.OnClickListener 
 
     private void initPlayer() {
         //1. 创建一个默认的 TrackSelector
-        BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
         TrackSelection.Factory videoTackSelectionFactory =
-                new AdaptiveTrackSelection.Factory(bandwidthMeter);
+                new AdaptiveTrackSelection.Factory();
         TrackSelector trackSelector = new DefaultTrackSelector(videoTackSelectionFactory);
         LoadControl loadControl = new DefaultLoadControl();
         //2.创建ExoPlayer
         mSimpleExoPlayer = ExoPlayerFactory.newSimpleInstance(this, trackSelector, loadControl);
         //3.创建SimpleExoPlayerView
-        mExoPlayerView = (SimpleExoPlayerView) findViewById(R.id.exoView);
+        mExoPlayerView = (PlayerView) findViewById(R.id.exoView);
         //4.为SimpleExoPlayer设置播放器
         mExoPlayerView.setPlayer(mSimpleExoPlayer);
     }

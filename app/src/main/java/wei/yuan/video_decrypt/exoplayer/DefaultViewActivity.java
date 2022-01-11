@@ -1,6 +1,7 @@
 package wei.yuan.video_decrypt.exoplayer;
 
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,6 +19,8 @@ import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 
+import java.io.File;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import wei.yuan.video_decrypt.R;
@@ -26,10 +29,13 @@ public class DefaultViewActivity extends AppCompatActivity implements SimpleExoP
 
     private static final String TAG = "DefaultViewActivity";
     private static final String DEFAULT_URL = "https://cdn.singsingenglish.com/new-sing/66c3d05eaa177e07d57465f948f0d8b934b7a7ba.mp4";
+    private static final String SERVER_URL = "http://45.76.219.190:6868/media/dmm";
 
     private Context mContext;
     private SimpleExoPlayer mPlayer;
     private PlayerView mVideoView;
+
+    private String fileDir;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -40,6 +46,10 @@ public class DefaultViewActivity extends AppCompatActivity implements SimpleExoP
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_exo_default_view);
         mContext = getApplicationContext();
+
+        Intent intent = getIntent();
+        Bundle bundle = intent.getBundleExtra("Info");
+        fileDir = bundle.getString("directory");
 
         initView();
         initEvent();
@@ -83,7 +93,9 @@ public class DefaultViewActivity extends AppCompatActivity implements SimpleExoP
         mVideoView = (PlayerView) findViewById(R.id.video_view);
         mVideoView.setPlayer(mPlayer);
         mPlayer.setPlayWhenReady(true);
-        Uri uri = Uri.parse(DEFAULT_URL);
+        String url = SERVER_URL + File.separator + fileDir + File.separator + "playlist.m3u8";
+        Log.d(TAG, "url: " + url);
+        Uri uri = Uri.parse(url);
         MediaSource mediaSource = buildMediaSource(uri);
         mPlayer.prepare(mediaSource, false, true);
     }
