@@ -319,7 +319,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    dismissLoadingDialog();
+                    dismissSwordLoadingDialog();
                     if (flag) {
                         destroyDownloadWaitTimer();
                         openTsDownloadDialog();
@@ -341,7 +341,7 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
                     } else {
                         setSpannableString(mTvConsole, "combine ts failed\n", "#FF0000");
                     }
-                    dismissLoadingDialog();
+                    dismissSwordLoadingDialog();
                 }
             });
         }
@@ -377,11 +377,11 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
     private void analysisM3U8() {
         Log.v(TAG, "analysisM3U8()");
-        showLoadingDialog();
+        showSwordLoadingDialog();
         File file = new File(m3u8Dir + File.separator + "local.m3u8");
         if (!file.exists()) {
             Log.d(TAG, file.getPath() + " doesn't exist");
-            dismissLoadingDialog();
+            dismissSwordLoadingDialog();
             showToastMsg(mContext, file.getPath() + " doesn't exist!");
         } else {
             tsTotalCount = 0;
@@ -394,10 +394,10 @@ public class M3U8AnalysisActivity extends BaseActivity implements View.OnClickLi
 
     private void combineTsFiles() {
         Log.v(TAG, "combineTsFiles()");
-        showLoadingDialog();
+        showSwordLoadingDialog();
         File tsDir = new File(m3u8Dir + File.separator + "ts");
         if (!tsDir.exists() || !tsDir.isDirectory()) {
-            dismissLoadingDialog();
+            dismissSwordLoadingDialog();
             showToastMsg(mContext, tsDir.getPath() + " doesn't exist!");
         } else {
             mTargetFile = tsDir;
