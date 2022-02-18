@@ -3,7 +3,9 @@ package wei.yuan.video_decrypt.activity;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
@@ -59,6 +61,18 @@ public class BaseActivity extends Activity {
         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
     }
 
+    public void openBrowserDownload(Context context, String url) {
+        if (url.startsWith("http") || url.startsWith("https") || url.startsWith("ftp")) {
+            Uri uri = Uri.parse(url);
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            intent.setClassName("com.android.chrome", "com.google.android.apps.chrome.Main");
+            startActivity(intent);
+        } else {
+            showToastMsg(context, "无效的url地址！");
+            return;
+        }
+    }
+
     private View swordLoadingView() {
         SwordLoadingView view = new SwordLoadingView(this);
         FrameLayout.LayoutParams fl = new FrameLayout.LayoutParams(
@@ -68,5 +82,10 @@ public class BaseActivity extends Activity {
         view.setLayoutParams(fl);
         view.getAnimator().start();
         return view;
+    }
+
+    private String generateFileName(String url) {
+        String[] strings = url.split("/");
+        return strings[strings.length - 1];
     }
 }

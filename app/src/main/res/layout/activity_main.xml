@@ -120,6 +120,15 @@
             android:text="@string/analysis_m3u8"
             android:textColor="@color/colorBlack"
             style="?android:buttonBarButtonStyle"/>
+
+        <Button
+            android:id="@+id/btn11"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/browser_download"
+            android:textColor="@color/colorBlack"
+            style="?android:buttonBarButtonStyle"/>
     </LinearLayout>
 
     <LinearLayout

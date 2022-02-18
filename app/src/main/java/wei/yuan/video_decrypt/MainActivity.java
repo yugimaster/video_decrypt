@@ -2,6 +2,7 @@ package wei.yuan.video_decrypt;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -55,6 +56,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private ScrollView mScrollView;
     private TextView mTvConsole;
     private Button mBtnM3U8;
+    private Button mBtnBrowserDownload;
     private Button mBtnDownload;
     private Button mBtnCombine;
     private Button mBtnDecrypt;
@@ -81,6 +83,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         mTvConsole = (TextView) findViewById(R.id.consoleText);
         mBtnM3U8 = (Button) findViewById(R.id.btn1);
         mBtnM3U8.setOnClickListener(this);
+        mBtnBrowserDownload = (Button) findViewById(R.id.btn11);
+        mBtnBrowserDownload.setOnClickListener(this);
         mBtnDownload = (Button) findViewById(R.id.btn2);
         mBtnDownload.setOnClickListener(this);
         mBtnCombine = (Button) findViewById(R.id.btn3);
@@ -158,6 +162,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             case R.id.btn10:
                 Log.v(TAG, "exo player senior custom activity");
                 startActivity(SeniorCustomViewActivity.class.getName(), path);
+                break;
+            case R.id.btn11:
+                Log.v(TAG, "open browser to download url");
+                openBrowserDownload(this, path);
                 break;
             default:
                 break;
@@ -501,5 +509,26 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 mTvConsole.append(builder);
             }
         });
+    }
+
+    private void multiUrlDownloadWithBrowser(Context context, String firstUrl, int count) {
+        String firstFileName = generateFileName(firstUrl);
+        String firstTsIndex = getTsIndex(firstFileName);
+        for (int i = 0; i < count; i++) {
+            if (firstUrl.endsWith(".ts")) {
+                int index = Integer.valueOf(firstTsIndex) + i;
+                String curTsName = firstFileName.replace(firstTsIndex + ".ts",
+                        String.valueOf(index) + ".ts");
+                String curUrl = firstUrl.replace(firstFileName, curTsName);
+                openBrowserDownload(context, curUrl);
+            } else {
+                openBrowserDownload(context, firstUrl);
+            }
+        }
+    }
+
+    private String generateFileName(String url) {
+        String[] strings = url.split("/");
+        return strings[strings.length - 1];
     }
 }

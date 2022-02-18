@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import wei.yuan.video_decrypt.util.CommonUtil;
+import wei.yuan.video_decrypt.view.DownloadProgressBar;
 
 public class DownloadActivity extends Activity implements View.OnClickListener {
 
@@ -43,9 +45,20 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
     private Button mBtnDownload;
     private Button mBtnClear;
     private TextView mTvConsole;
+    private TextView mTvTaskName;
+    private TextView mTvSpeed;
+    private RelativeLayout mProgressLayout;
+    private DownloadProgressBar mProgressBar;
 
     private String downloadDir;
     private String url;
+    private String beginIndex;
+    private String beginUrlName;
+    private String curUrl;
+    private String curTaskSpeed = "0";
+
+    private int downloadOffset = 0;
+    private int count = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,6 +110,7 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
 
     @Download.onPre protected void onPre(DownloadTask task) {
         Log.d(TAG, "onPre");
+        openDownloadProgressBar();
     }
 
     @Download.onTaskStart void taskStart(DownloadTask task) {
@@ -110,6 +124,7 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         String speed = task.getConvertSpeed();
         long speed1 = task.getSpeed();
         Log.d(TAG, "percent: " + p + "\n" + "speed: " + speed + "\n" + "speed1: " + speed1);
+        updateDownloadProgressBar(p, String.valueOf(speed1));
     }
 
     @Download.onTaskResume void taskResume(DownloadTask task) {
@@ -121,16 +136,34 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
     }
 
     @Download.onTaskCancel void taskCancel(DownloadTask task) {
-        Log.d(TAG, "cancel");
+        Log.d(TAG, "cancel task " + task.getFilePath());
+        curTaskSpeed = "0";
+        closeDownloadProgressBar();
     }
 
     @Download.onTaskFail void taskFail(DownloadTask task) {
         Log.d(TAG, "fail");
+        setSpannableString(mTvConsole, "task " + task.getFilePath() + " fail.\n", "#FF0000");
+        clearDownloadTask(curUrl);
     }
 
     @Download.onTaskComplete void taskComplete(DownloadTask task) {
         Log.d(TAG, "path ==> " + task.getDownloadEntity().getFilePath());
-        showDebugLog(mTvConsole, "task complete: " + task.getDownloadEntity().getFilePath());
+        showDebugLog(mTvConsole, "task complete: " + generateFileName(curUrl));
+        count += 1;
+        curTaskSpeed = "0";
+        closeDownloadProgressBar();
+        if (count > downloadOffset) {
+            setSpannableString(mTvConsole, "single thread downloads quene is over." + "\n", "#4D8ADE");
+            setNextBeginDownloadUrl();
+            beginUrlName = "";
+            beginIndex = "";
+            curUrl = "";
+            count = 0;
+            downloadOffset = 0;
+        } else {
+            singleThreadDownloadsQuene(count);
+        }
     }
 
     @DownloadGroup.onPre void onPre(DownloadGroupTask task) {
@@ -217,6 +250,12 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         mTvConsole = (TextView) findViewById(R.id.consoleText);
 
         mEtDir.setText(downloadDir);
+
+        mProgressLayout = (RelativeLayout) findViewById(R.id.rl_progress);
+        mProgressBar = (DownloadProgressBar) findViewById(R.id.download_progress_bar);
+        mTvTaskName = (TextView) findViewById(R.id.task_name);
+        mTvSpeed = (TextView) findViewById(R.id.download_speed);
+        mProgressLayout.setVisibility(View.GONE);
     }
 
     private void downloadButtonClick() {
@@ -242,7 +281,9 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
             return;
         }
         mTvConsole.setText("");
-        httpMultiDownloadGroup(url, offset);
+//        httpMultiDownloadGroup(url, offset);
+        downloadOffset = Integer.valueOf(offset);
+        singleThreadDownloadsQuene(count);
     }
 
     private void clearButtonClick() {
@@ -253,6 +294,17 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         } else {
             mTvConsole.append("Download Group Tasks is none!" + "\n");
         }
+        url = mEtUrl.getText().toString().replace("\n", "");;
+        clearDownloadTask(url);
+    }
+
+    private void singleThreadDownloadsQuene(int index) {
+        beginUrlName = generateFileName(url);
+        beginIndex = getTsIndex(beginUrlName);
+        String curIndex = String.valueOf(Integer.valueOf(beginIndex) + index);
+        String curUrlName = beginUrlName.replace(beginIndex + ".ts", curIndex + ".ts");
+        curUrl = url.replace(beginUrlName, curUrlName);
+        httpSingleDownload(curUrl, curUrlName);
     }
 
     private void httpSingleDownload(String downloadUrl, String downloadName) {
@@ -366,6 +418,23 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         return flag;
     }
 
+    private boolean clearDownloadTask(String downloadUrl) {
+        Log.v(TAG, "clearDownloadTask(): " + downloadUrl);
+        boolean flag = false;
+        DownloadEntity entity = Aria.download(this).getFirstDownloadEntity(downloadUrl);
+        if (entity != null) {
+            long taskId = entity.getId();
+            Log.v(TAG, "DownloadEntity taskId: " + taskId);
+            // 取消下载链接任务
+            Aria.download(this).load(taskId).cancel();
+            flag = true;
+        } else {
+            Log.v(TAG, "no this download task!");
+        }
+
+        return flag;
+    }
+
     private String getIndexFileName(String originName, int originIndex, int index) {
         String indexFileName = "";
         if (originName.startsWith("seg")) {
@@ -377,5 +446,37 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         }
 
         return indexFileName;
+    }
+
+    private void setNextBeginDownloadUrl() {
+        String nextBeginIndex = String.valueOf(Integer.valueOf(beginIndex) + downloadOffset + 1);
+        String nextBeginUrlName = beginUrlName.replace(beginIndex + ".ts", nextBeginIndex + ".ts");
+        String nextBeginUrl = url.replace(beginUrlName, nextBeginUrlName);
+        mEtUrl.setText(nextBeginUrl);
+    }
+
+    private void openDownloadProgressBar() {
+        Log.v(TAG, "openDownloadProgressBar()");
+        String curUrlName = generateFileName(curUrl);
+        mProgressLayout.setVisibility(View.VISIBLE);
+        mTvTaskName.setText(curUrlName);
+        mTvSpeed.setVisibility(View.VISIBLE);
+        updateDownloadProgressBar(0, curTaskSpeed);
+    }
+
+    private void closeDownloadProgressBar() {
+        Log.v(TAG, "closeDownloadProgressBar()");
+        mTvTaskName.setText("");
+        mTvSpeed.setText("");
+        mTvSpeed.setVisibility(View.GONE);
+        mProgressLayout.setVisibility(View.GONE);
+    }
+
+    private void updateDownloadProgressBar(int percent, String speed) {
+        // 更新下载进度
+        String s = CommonUtil.sizeConvertFormat(Long.parseLong(speed)) + "/s";
+        mTvSpeed.setText(s);
+        mProgressBar.setTotalValue(100.f);
+        mProgressBar.setCurrentValue(percent);
     }
 }
