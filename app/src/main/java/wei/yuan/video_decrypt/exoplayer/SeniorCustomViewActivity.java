@@ -146,12 +146,13 @@ public class SeniorCustomViewActivity extends AppCompatActivity implements
         }
     }
 
-    private void initView() {
+    private void initView(int mode) {
         mPlayer = new SimpleExoPlayer.Builder(mContext).build();
         mPlayer.setPlayWhenReady(true);
         mVideoView = (MyPlayerView) findViewById(R.id.video_view);
         mVideoView.setPlayer(mPlayer);
-        String playUrl = fileDir + File.separator + "playlist.m3u8";
+        String m3u8Name = mode == 1 ? "playlist.m3u8" : "playlist_115.m3u8";
+        String playUrl = fileDir + File.separator + m3u8Name;
         Log.d(TAG, "play url: " + playUrl);
         Uri uri = Uri.parse(playUrl);
         int type = Util.inferContentType(uri.getLastPathSegment());
@@ -345,21 +346,24 @@ public class SeniorCustomViewActivity extends AppCompatActivity implements
         AlertDialog.Builder builder = new AlertDialog.Builder(this,
                 R.style.Theme_AppCompat_Light_Dialog);
         builder.setTitle("选择服务器");
-        final String[] servers = {"阿里云", "Vultr"};
+        final String[] servers = {"阿里云", "115"};
         builder.setItems(servers, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 String currentServer = servers[which];
+                int mode = 0;
                 showToastMsg(mContext, "HttpServer: " + currentServer);
                 if (which == 0) {
                     httpServer = "http://47.100.53.117:6868/dmm";
+                    mode = 1;
                 } else if (which == 1) {
-                    httpServer = "http://45.76.219.190:6868/media/dmm";
+                    httpServer = "http://47.100.53.117:6868/dmm";
+                    mode = 2;
                 } else {
                     httpServer = "";
                 }
                 fileDir = httpServer + File.separator + dir;
-                initView();
+                initView(mode);
                 initEvent();
             }
         });

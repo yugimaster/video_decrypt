@@ -70,7 +70,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private BroadcastReceiver mOtgReceiver;
     private File mSrcDir;
 
-    private String[] usbList = null;
+    private List<String> extraStorageList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,6 +103,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         mBtnExoSimple.setOnClickListener(this);
         mBtnExoSenior = (Button) findViewById(R.id.btn10);
         mBtnExoSenior.setOnClickListener(this);
+
+        extraStorageList = CommonUtil.getSdcardPaths();
+        Log.d(TAG, "extra storage length: " + extraStorageList.size());
     }
 
     @Override

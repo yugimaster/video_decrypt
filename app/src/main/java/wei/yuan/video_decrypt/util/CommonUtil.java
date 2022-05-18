@@ -10,6 +10,7 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.arialyy.aria.util.FileUtil;
+import com.google.android.exoplayer2.ExoPlaybackException;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -19,7 +20,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+
+import wei.yuan.video_decrypt.DecryptApp;
 
 /**
  * 公共类
@@ -279,6 +284,37 @@ public class CommonUtil {
     public static int px2dip(Context context, float pxValue) {
         final float scale = context.getResources().getDisplayMetrics().density;
         return (int) (pxValue / scale + 0.5f);
+    }
+
+    public static List<String> getSdcardPaths() {
+        Log.d("CommonUtil", "getSdcardPaths");
+        List<String> paths = new ArrayList<>();
+        try {
+            File folder = new File("/storage");
+            if (!folder.exists() || !folder.isDirectory()) {
+                return null;
+            }
+            File[] files = folder.listFiles();
+            if (files == null) {
+                return null;
+            }
+            for (File file : files) {
+                if (file.getName().equals("emulated") || file.getName().equals("self")) {
+                    continue;
+                }
+                if (file.exists() && file.isDirectory()) {
+                    Log.d("CommonUtil", file.getName());
+                    Log.d("CommonUtil", file.getAbsolutePath());
+                    Log.d("CommonUtil", file.getPath());
+                    paths.add(file.getName());
+                }
+            }
+        } catch (Exception e) {
+            Log.v(TAG, "getSdcardPaths() caught exp: " + e, e);
+            return null;
+        }
+
+        return paths;
     }
 
     private static byte[] toByteArray(FileInputStream fis, long len) {

@@ -44,6 +44,7 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
     private EditText mEtOffset;
     private Button mBtnDownload;
     private Button mBtnClear;
+    private Button mBtnTest;
     private TextView mTvConsole;
     private TextView mTvTaskName;
     private TextView mTvSpeed;
@@ -98,6 +99,9 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
                 break;
             case R.id.btn2:
                 clearButtonClick();
+                break;
+            case R.id.btn3:
+                testDownloadClick();
                 break;
             default:
                 break;
@@ -247,6 +251,8 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         mBtnDownload.setOnClickListener(this);
         mBtnClear = (Button) findViewById(R.id.btn2);
         mBtnClear.setOnClickListener(this);
+        mBtnTest = (Button) findViewById(R.id.btn3);
+        mBtnTest.setOnClickListener(this);
         mTvConsole = (TextView) findViewById(R.id.consoleText);
 
         mEtDir.setText(downloadDir);
@@ -298,6 +304,33 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         clearDownloadTask(url);
     }
 
+    private void testDownloadClick() {
+        Log.v(TAG, "testDownloadClick()");
+        downloadDir = mEtDir.getText().toString().replace("\n", "");
+        if (downloadDir.isEmpty()) {
+            Toast.makeText(getApplicationContext(), "请输入下载目录！", Toast.LENGTH_LONG).show();
+            return;
+        }
+        File fileDir = new File(EXTRA_STORAGE + "/dmm/" + downloadDir);
+        Log.d(TAG, fileDir.getPath());
+        if (!fileDir.exists() || !fileDir.isDirectory()) {
+            Toast.makeText(getApplicationContext(), "无效的下载目录！", Toast.LENGTH_LONG).show();
+            return;
+        }
+        url = mEtUrl.getText().toString().replace("\n", "");
+        if (url.isEmpty()) {
+            url = DOWNLOAD_URL;
+        }
+        String offset = mEtOffset.getText().toString();
+        if (offset.isEmpty()) {
+            Toast.makeText(getApplicationContext(), "请输入offset的值！", Toast.LENGTH_LONG).show();
+            return;
+        }
+        mTvConsole.setText("");
+        downloadOffset = Integer.valueOf(offset);
+        singleTestDownload(url);
+    }
+
     private void singleThreadDownloadsQuene(int index) {
         beginUrlName = generateFileName(url);
         beginIndex = getTsIndex(beginUrlName);
@@ -305,6 +338,20 @@ public class DownloadActivity extends Activity implements View.OnClickListener {
         String curUrlName = beginUrlName.replace(beginIndex + ".ts", curIndex + ".ts");
         curUrl = url.replace(beginUrlName, curUrlName);
         httpSingleDownload(curUrl, curUrlName);
+    }
+
+    private void singleTestDownload(String downloadUrl) {
+        Log.v(TAG, "singleTestDownload()");
+        curUrl = downloadUrl;
+        String urlName = generateFileName(downloadUrl);
+        urlName = downloadDir.replace("/", "-") + "_" + urlName;
+        File testDir = new File(EXTRA_STORAGE + "/dmm/" + downloadDir + "/test");
+        if (!testDir.exists()) {
+            testDir.mkdir();
+        }
+        String path = testDir.getAbsolutePath() + File.separator + urlName;
+        Log.d(TAG, path);
+        Aria.download(this).load(downloadUrl).setFilePath(path).create();
     }
 
     private void httpSingleDownload(String downloadUrl, String downloadName) {
